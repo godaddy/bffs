@@ -19,9 +19,11 @@ var request = require('request');
 var Datastar = require('datastar');
 var assume = require('assume');
 var async = require('async');
+var sinon = require('sinon');
+var diagnostics = require('diagnostics');
 var BFFS = require('..');
 var fs = require('fs');
-var bffConfig = require('./config');
+var bffConfig = require('../config');
 
 describe('bffs', function () {
 
@@ -34,6 +36,7 @@ describe('bffs', function () {
   var data;
   var spec;
   var bffs;
+
 
   //
   // Setup datastar and the models before anything else
@@ -57,6 +60,7 @@ describe('bffs', function () {
 
   beforeEach(function (next) {
     bffs = new BFFS(extend({
+      log: sinon.spy(diagnostics('bffs-test')),
       prefix: 'warehouse-test',
       datastar: datastar,
       models: models,
@@ -117,7 +121,7 @@ describe('bffs', function () {
     assume(init).throws(/Requires proper datastar instance and models/);
   });
 
-  it('will throw without an datastar instance', function () {
+  it('will throw without a datastar instance', function () {
     function init() { bffs = new BFFS({ models: models }); }
     assume(init).throws(/Requires proper datastar instance and models/);
   });
@@ -156,6 +160,8 @@ describe('bffs', function () {
       next();
     });
   });
+
+
 
   it('does not store the content in the meta data', function (next) {
     bffs.search(spec, function (err, result) {
@@ -216,6 +222,10 @@ describe('bffs', function () {
       assume(err.message).match(/extension/i);
       next();
     });
+  });
+
+  it('will log info to console when calling publish', function () {
+    assume(bffs.log.callCount).equals(1);
   });
 
   it('stores the compressed files', function (next) {
