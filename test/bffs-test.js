@@ -37,7 +37,6 @@ describe('bffs', function () {
   var spec;
   var bffs;
 
-
   //
   // Setup datastar and the models before anything else
   //
