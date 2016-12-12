@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "assume": "1.4.x",
+    "assume-sinon": "^0.0.0",
     "babel-eslint": "^6.1.2",
     "datastar": "~1.3.1",
     "fingerprinting": "^1.0.1",
@@ -53,9 +54,6 @@
     "mocha": "2.3.x",
     "warehouse-models": "^5.1.1",
     "request": "2.65.x",
-    "sinon": "^1.15.4",
-    "sinon-spy-react": "^2.0.0",
-    "sinon-chai": "^2.8.0",
     "uuid": "^2.0.1"
   }
 }

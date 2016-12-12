@@ -53,7 +53,6 @@ function BFFS(options) {
   this.prefix = prefix;
   this.envs = env;
 
-
   this.cdns = this.cdnify(cdn);
 
   this.limit = options.limit;
@@ -293,11 +292,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
 
     if (error) return fn(error);
 
-    if (!error) {
-      this.log('Published build for %s', spec.name, spec,
-      'filename: ' + files[i].filename,
-      'file fingerprint: ' + files[i].fingerprint)
-    }
+      this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
   }
 
   //

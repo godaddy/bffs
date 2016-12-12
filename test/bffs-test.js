@@ -161,8 +161,6 @@ describe('bffs', function () {
     });
   });
 
-
-
   it('does not store the content in the meta data', function (next) {
     bffs.search(spec, function (err, result) {
       /* istanbul ignore next */
