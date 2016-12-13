@@ -12,6 +12,7 @@ var parallel = require('parallel-transform');
 var CDNUp = require('cdnup');
 var path = require('path');
 var uniq = require('uniq');
+var diagnostics = require('diagnostics');
 
 var isRedis = /^~~active/;
 
@@ -48,6 +49,7 @@ function BFFS(options) {
   //
   this.datastar = options.datastar;
   this.models = options.models;
+  this.log = options.log
   this.prefix = prefix;
   this.envs = env;
 
@@ -90,7 +92,8 @@ BFFS.prototype.init = function init(options) {
     datastar: options.datastar,
     store: options.store,
     prefix: options.prefix || 'wrhs',
-    limit: options.limit || 10
+    limit: options.limit || 10,
+    log: typeof options.log === 'function' ? options.log : diagnostics('bffs')
   };
 };
 
@@ -268,7 +271,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
   if (!Array.isArray(files) || !files.length) return fn(new Error('options.files is required and must be an Array.'));
 
   //
-  // Validate the build files
+  // Validate the build files and log successful builds
   //
   var i = files.length;
   var error;
@@ -288,6 +291,8 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
     }
 
     if (error) return fn(error);
+
+      this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
   }
 
   //

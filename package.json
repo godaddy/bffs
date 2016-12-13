@@ -6,6 +6,7 @@
   "scripts": {
     "95%": "istanbul check-coverage --statements 95 --functions 95 --lines 95 --branches 95",
     "test": "mocha test/*-test.js",
+    "test-debug": "mocha --debug-brk test/*-test.js",
     "watch": "mocha --watch test.js",
     "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/*-test.js",
     "eslint": "godaddy-js-style-eslint -c .eslintrc ./*.js test/bffs-test.js",
@@ -31,6 +32,7 @@
     "async": "1.4.x",
     "cdnup": "^2.0.0",
     "deep-extend": "0.4.x",
+    "diagnostics": "^1.0.1",
     "has": "^1.0.1",
     "hyperquest": "~2.1.0",
     "list-stream": "^1.0.1",
