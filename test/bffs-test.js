@@ -23,7 +23,7 @@ var sinon = require('sinon');
 var diagnostics = require('diagnostics');
 var BFFS = require('..');
 var fs = require('fs');
-var bffConfig = require('../config');
+var bffConfig = require('./config');
 
 describe('bffs', function () {
 
