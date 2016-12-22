@@ -1,6 +1,5 @@
 'use strict';
 
-var fs = require('fs');
 var hyperquest = require('hyperquest');
 var extend = require('deep-extend');
 var flatten = require('lodash.flatten');
@@ -292,7 +291,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
 
     if (error) return fn(error);
 
-      this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
+    this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
   }
 
   //
