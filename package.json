@@ -51,8 +51,9 @@
     "istanbul": "0.3.x",
     "lodash.omit": "^4.5.0",
     "mocha": "2.3.x",
-    "warehouse-models": "^5.1.1",
     "request": "2.65.x",
-    "uuid": "^2.0.1"
+    "sinon": "~1.17.6",
+    "uuid": "^2.0.1",
+    "warehouse-models": "^5.1.1"
   }
 }

@@ -1,6 +1,5 @@
 'use strict';
 
-var fs = require('fs');
 var hyperquest = require('hyperquest');
 var extend = require('deep-extend');
 var flatten = require('lodash.flatten');
@@ -292,7 +291,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
 
     if (error) return fn(error);
 
-      this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
+    this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
   }
 
   //
@@ -383,11 +382,10 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
       //
       // Create the files and add to the batch.
       //
-      async.map(fingerprints, (print, next) => {
+      var ops = fingerprints.map((print) => {
         var gz = path.extname(print) === '.gz';
         var key = gz ? print.slice(0, -3) : print;
         var file = fileMap[key];
-        var content;
 
         //
         // return a function that can be used to build a create statement with
@@ -400,9 +398,8 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         //
         // Compile the entity based on parameters
         //
-        function compileEntity(file, source, sourcemap) {
+        function compileEntity() {
           var entity = extend({
-            source: source,
             buildId: bff.key(payload),
             extension: file.extension,
             filename: file.filename,
@@ -410,61 +407,30 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             url: file.url
           }, payload);
 
-          //
-          // Add sourcemap if available
-          //
-          if (sourcemap) entity.sourcemap = sourcemap;
-
           return entity;
         }
 
-        content = gz ? file.compressed : file.content;
+        return collect(compileEntity());
+      });
+
+      operations.push.apply(operations, ops);
+      //
+      // Final execution step
+      //
+      operations.push(function execute(statements, callback) {
+        statements.execute(callback);
+      });
+
+      //
+      // Ensure everything exists in the CDN before we commit to the database
+      //
+      bff._checkCdn(files, (err) => {
+        if (err) return fn(err);
 
         //
-        // If we are a buffer, handle that
+        // Let it ride. Insert all the things into the database!
         //
-        if (Buffer.isBuffer(content)) {
-          return next(null, collect(compileEntity(file, content)));
-        }
-
-        //
-        // Otherwise, handle a file path and read the contents of the file.
-        // We also handle reading the sourcemap here if it exists
-        //
-        async.parallel([
-          function (fn) {
-            fs.readFile(content, fn);
-          },
-          file.sourcemap && function (fn) {
-            fs.readFile(file.sourcemap.content, fn);
-          }
-        ].filter(Boolean), (err, results) => {
-          if (err) return fn(err);
-          next(null, collect(compileEntity(file, results[0], results[1])));
-        });
-      }, (err, ops) => {
-        if (err) return fn(err)
-
-        operations.push.apply(operations, ops);
-        //
-        // Final execution step
-        //
-        operations.push(function execute(statements, callback) {
-          statements.execute(callback);
-        });
-
-        //
-        // Ensure everything exists in the CDN before we commit to the database
-        //
-        bff._checkCdn(files, (err) => {
-          if (err) return fn(err);
-
-          //
-          // Let it ride. Insert all the things into the database!
-          //
-          async.waterfall(operations, fn);
-        });
-
+        async.waterfall(operations, fn);
       });
     });
   });

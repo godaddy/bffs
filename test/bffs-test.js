@@ -23,7 +23,7 @@ var sinon = require('sinon');
 var diagnostics = require('diagnostics');
 var BFFS = require('..');
 var fs = require('fs');
-var bffConfig = require('../config');
+var bffConfig = require('./config');
 
 describe('bffs', function () {
 
@@ -225,15 +225,6 @@ describe('bffs', function () {
     assume(bffs.log.callCount).equals(1);
   });
 
-  it('stores the compressed files', function (next) {
-    bffs.build(data.fingerprint, true, function (err, result) {
-      if (err) return console.error(err);
-      assume(result.source).deep.equals(fs.readFileSync(data.compressed));
-
-      next();
-    });
-  });
-
   it('stores files in the cdn', function (next) {
     var upload = {
       name: 'cdn-example',
@@ -282,15 +273,6 @@ describe('bffs', function () {
         )
       ], next);
     }
-  });
-
-  it('stores the build file', function (next) {
-    bffs.build(data.fingerprint, false, function (err, result) {
-      if (err) return console.error(err);
-      assume(result.source).deep.equals(fs.readFileSync(data.content));
-
-      next();
-    });
   });
 
   it('returns nothing for unknown builds', function (next) {
