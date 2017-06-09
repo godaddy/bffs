@@ -1,6 +1,6 @@
 {
   "name": "bffs",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "build files finder service",
   "main": "index.js",
   "scripts": {
