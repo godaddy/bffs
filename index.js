@@ -650,25 +650,30 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
       });
     }))
     .on('error', fn)
-    .on('data', (build) => {
+    .pipe(parallel(this.limit, (build, next) => {
+      const miniBatch = []
       //
       // 6. Replace the build HEAD to what we are rolling back to and the build
       //    itself so it gets the updated rollbackBuildIds
       //
-      operations.push(bff._collect(BuildHead, 'create', strip(build)));
-      operations.push(bff._collect(Build, 'update', build));
-
-    })
-    .on('end', () => {
-      operations.push(function execute(statements, next) {
+      miniBatch.push(bff._collect(BuildHead, 'create', strip(build)));
+      miniBatch.push(bff._collect(Build, 'update', build));
+      miniBatch.push(function execute(statements, next) {
         if (!next && typeof statements === 'function') {
           return process.nextTick(statements);
         }
 
         statements.execute(next);
       });
-
-      async.waterfall(operations, fn);
+      next(null, miniBatch);
+    }))
+    .on('data', (data) => {
+      operations.push(data);
+    })
+    .on('end', () => {
+      async.eachLimit(operations, this.limit, (ops, next) => {
+        async.waterfall(ops, next);
+      }, callback)
     });
 };
 
