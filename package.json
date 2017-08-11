@@ -10,8 +10,7 @@
     "watch": "mocha --watch test.js",
     "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/*-test.js",
     "eslint": "eslint-godaddy -c .eslintrc ./*.js test/bffs-test.js",
-    "lint": "npm run eslint",
-    "pretest": "npm run lint",
+    "pretest": "npm run eslint",
     "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/*-test.js"
   },
   "repository": {
