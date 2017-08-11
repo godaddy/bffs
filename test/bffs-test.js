@@ -112,6 +112,7 @@ describe('bffs', function () {
   });
 
   it('can be initialized without `new`', function () {
+    // eslint-disable-next-line new-cap
     bffs = BFFS({ models: models, datastar: datastar, store: redis });
   });
 

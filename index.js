@@ -48,7 +48,7 @@ function BFFS(options) {
   //
   this.datastar = options.datastar;
   this.models = options.models;
-  this.log = options.log
+  this.log = options.log;
   this.prefix = prefix;
   this.envs = env;
 
@@ -519,34 +519,34 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
   // Grab all the builds for the given spec.
   //
   this.stream(spec)
-  .on('error', fn)
-  .on('data', function incoming(data) {
+    .on('error', fn)
+    .on('data', function incoming(data) {
     //
     // This statement collection needs to be simpler would love ideas if it
     // would make sense as a separate module or something in `datastar`.
     //
-    operations.push.apply(operations,
-      data.fingerprints.map(function (print) {
-        return bff._collect(BuildFile, 'remove', {
-          fingerprint: print
-        });
-      })
-    );
+      operations.push.apply(operations,
+        data.fingerprints.map(function (print) {
+          return bff._collect(BuildFile, 'remove', {
+            fingerprint: print
+          });
+        })
+      );
 
-    operations.push(bff._collect(Build, 'remove', spec));
-    operations.push(bff._collect(BuildHead, 'remove', spec));
-  })
-  .on('end', function end() {
-    operations.push(function execute(statements, next) {
-      if (!next && typeof statements === 'function') {
-        return process.nextTick(statements);
-      }
+      operations.push(bff._collect(Build, 'remove', spec));
+      operations.push(bff._collect(BuildHead, 'remove', spec));
+    })
+    .on('end', function end() {
+      operations.push(function execute(statements, next) {
+        if (!next && typeof statements === 'function') {
+          return process.nextTick(statements);
+        }
 
-      statements.execute(next);
+        statements.execute(next);
+      });
+
+      async.waterfall(operations, fn);
     });
-
-    async.waterfall(operations, fn);
-  });
 
   return bff;
 };
@@ -651,7 +651,7 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
     }))
     .on('error', fn)
     .pipe(parallel(this.limit, (build, next) => {
-      const miniBatch = []
+      const miniBatch = [];
       //
       // 6. Replace the build HEAD to what we are rolling back to and the build
       //    itself so it gets the updated rollbackBuildIds
@@ -673,7 +673,7 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
     .on('end', () => {
       async.eachLimit(operations, this.limit, (ops, next) => {
         async.waterfall(ops, next);
-      }, callback)
+      }, callback);
     });
 };
 
@@ -797,16 +797,16 @@ BFFS.prototype.wipe = function cancel(spec, fn) {
   this.store.scanStream({
     match: this.key(spec, 'active') + '*'
   })
-  .on('error', done)
-  .on('data', keys => {
-    for (let key of keys) {
-      commands.push(['del', key]);
-    }
-  })
-  .on('end', () => {
-    if (!commands.length) return done();
-    this.store.multi(commands).exec(done);
-  });
+    .on('error', done)
+    .on('data', keys => {
+      for (const key of keys) {
+        commands.push(['del', key]);
+      }
+    })
+    .on('end', () => {
+      if (!commands.length) return done();
+      this.store.multi(commands).exec(done);
+    });
   return this;
 };
 
@@ -864,7 +864,7 @@ BFFS.normalizeOpts = function normalizeOpts(options, env) {
   options = options || {};
 
   const result = {};
-  const config = options.config || { files: {} };
+  const config = options.config || { files: {}};
   const files = { all: options.files || [] };
   files.noSourceMap = files.all.filter((file) => file.extension !== '.map');
   files.sourceMap = files.all.filter((file) => file.extension === '.map');
@@ -908,7 +908,7 @@ BFFS.normalizeOpts = function normalizeOpts(options, env) {
   //
   result.artifacts = artifacts.length
     ? artifacts.map(normalize).filter(Boolean)
-    : files.noSourceMap.map((file) => filePath(file))
+    : files.noSourceMap.map((file) => filePath(file));
 
   result.recommended = recommended.map(normalize).filter(Boolean);
   //
@@ -923,4 +923,4 @@ BFFS.normalizeOpts = function normalizeOpts(options, env) {
   });
 
   return result;
-}
+};
