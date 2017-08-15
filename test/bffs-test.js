@@ -309,8 +309,8 @@ describe('bffs', function () {
 
       var next = assume.wait(2, 6, cleanup);
 
-      bffs.search(newSpec, (err2, build) => {
-        assume(err2).is.falsey();
+      bffs.search(newSpec, (err, build) => {
+        assume(err).is.falsey();
         assume(build).is.an('object');
         assume(build.previousBuildId).equals(prevBuildId);
         next();
@@ -343,15 +343,15 @@ describe('bffs', function () {
       /* istanbul ignore next */
       if (err) return next();
 
-      bffs.build(data.fingerprint, false, function (err2, result) {
+      bffs.build(data.fingerprint, false, function (err, result) {
         /* istanbul ignore next */
-        if (err2) return next();
+        if (err) return next();
 
         assume(result).is.falsey();
 
-        bffs.build(data.fingerprint, true, function (err3, result) {
+        bffs.build(data.fingerprint, true, function (err, result) {
           /* istanbul ignore next */
-          if (err3) return next();
+          if (err) return next();
 
           assume(result).is.falsey();
 
@@ -397,8 +397,8 @@ describe('bffs', function () {
     bffs.publish(spec, options, function (err) {
       if (err) return next(err);
 
-      bffs.search(spec, function (err2, build) {
-        if (err2) return cleanup(err2);
+      bffs.search(spec, function (err, build) {
+        if (err) return cleanup(err);
         assume(build.artifacts).is.an('array');
         assume(build.artifacts.length).eql(names.length);
         assume(build.artifacts.sort()).eql(
@@ -413,8 +413,8 @@ describe('bffs', function () {
           request({
             url: fullUrl,
             strictSSL: false
-          }, (err3, res, body) => {
-            if (err3) return fn(err3);
+          }, (err, res, body) => {
+            if (err) return fn(err);
             assume(body).equals(fileMap[arti].actualContent);
 
             request({
@@ -548,9 +548,9 @@ describe('bffs', function () {
       /* istanbul ignore next */
       if (err) return next(err);
 
-      bffs.active(spec, function (err2, active) {
+      bffs.active(spec, function (err, active) {
         /* istanbul ignore next */
-        if (err2) return next(err2);
+        if (err) return next(err);
 
         assume(active).is.truthy();
         assume(active.length);
@@ -574,13 +574,13 @@ describe('bffs', function () {
       /* istanbul ignore next */
       if (err) return next(err);
 
-      bffs.start(spec, id, timeout, function (err2) {
+      bffs.start(spec, id, timeout, function (err) {
         /* istanbul ignore next */
-        if (err2) return next(err2);
+        if (err) return next(err);
 
-        bffs.active(spec, function (err3, active) {
+        bffs.active(spec, function (err, active) {
           /* istanbul ignore next */
-          if (err3) return next(err3);
+          if (err) return next(err);
 
           assume(active).is.truthy();
 
@@ -606,12 +606,12 @@ describe('bffs', function () {
       bffs.start(extend({ locale: locale }, spec), id, timeout, fn);
     }, err => {
       if (err) return next(err);
-      bffs.active(spec, (err2, active) => {
-        if (err2) return next(err2);
+      bffs.active(spec, (err, active) => {
+        if (err) return next(err);
         assume(active).is.truthy();
         assume(active.length).equals(3);
-        bffs.wipe(spec, err3 => {
-          if (err3) return next(err3);
+        bffs.wipe(spec, err => {
+          if (err) return next(err);
           bffs.active(spec, (error, active) => {
             if (error) return next(error);
             assume(active.length).equals(0);
