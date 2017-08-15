@@ -8,6 +8,5 @@ module.exports = {
       class: 'SimpleStrategy',
       replication_factor: 1
     }
-
   }
 };
