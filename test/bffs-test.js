@@ -23,10 +23,15 @@ var sinon = require('sinon');
 var diagnostics = require('diagnostics');
 var BFFS = require('..');
 var fs = require('fs');
-var bffConfig = require('./config');
+
+var bffConfig = {};
+try {
+  bffConfig = require('./config');
+} catch (ex) {
+  // Ignore errors
+}
 
 describe('bffs', function () {
-
   this.timeout(500000);
 
   var datastar;
