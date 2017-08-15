@@ -112,6 +112,7 @@ describe('bffs', function () {
   });
 
   it('can be initialized without `new`', function () {
+    // eslint-disable-next-line new-cap
     bffs = BFFS({ models: models, datastar: datastar, store: redis });
   });
 
@@ -256,8 +257,8 @@ describe('bffs', function () {
       request({
         url: bffs.cdns[upload.env].url() + '897687a456/24-finger-prints.js',
         strictSSL: false
-      }, function (err, res, body) {
-        if (err) return next(err);
+      }, function (error, res, body) {
+        if (error) return next(error);
 
         assume(body).equals(msg);
         cleanup();
@@ -280,8 +281,8 @@ describe('bffs', function () {
       assume(err).is.falsey();
       assume(data).is.falsey();
 
-      bffs.build('i dont really exist', false, function (err, data) {
-        assume(err).is.falsey();
+      bffs.build('i dont really exist', false, function (error, data) {
+        assume(error).is.falsey();
         assume(data).is.falsey();
 
         next();
@@ -303,15 +304,15 @@ describe('bffs', function () {
 
       var next = assume.wait(2, 6, cleanup);
 
-      bffs.search(newSpec, (err, build) => {
-        assume(err).is.falsey();
+      bffs.search(newSpec, (err2, build) => {
+        assume(err2).is.falsey();
         assume(build).is.an('object');
         assume(build.previousBuildId).equals(prevBuildId);
         next();
       });
 
-      bffs.head(newSpec, (err, buildHead) => {
-        assume(err).is.falsey();
+      bffs.head(newSpec, (error, buildHead) => {
+        assume(error).is.falsey();
         assume(buildHead).is.an('object');
         assume(buildHead.previousBuildId).equals(prevBuildId);
         next();
@@ -337,21 +338,21 @@ describe('bffs', function () {
       /* istanbul ignore next */
       if (err) return next();
 
-      bffs.build(data.fingerprint, false, function (err, result) {
+      bffs.build(data.fingerprint, false, function (err2, result) {
         /* istanbul ignore next */
-        if (err) return next();
+        if (err2) return next();
 
         assume(result).is.falsey();
 
-        bffs.build(data.fingerprint, true, function (err, result) {
+        bffs.build(data.fingerprint, true, function (err3, result) {
           /* istanbul ignore next */
-          if (err) return next();
+          if (err3) return next();
 
           assume(result).is.falsey();
 
-          bffs.search(spec, function (err, result) {
+          bffs.search(spec, function (error, result) {
             /* istanbul ignore next */
-            if (err) return next();
+            if (error) return next();
 
             assume(result).is.falsey();
 
@@ -391,8 +392,8 @@ describe('bffs', function () {
     bffs.publish(spec, options, function (err) {
       if (err) return next(err);
 
-      bffs.search(spec, function (err, build) {
-        if (err) return cleanup(err);
+      bffs.search(spec, function (err2, build) {
+        if (err2) return cleanup(err2);
         assume(build.artifacts).is.an('array');
         assume(build.artifacts.length).eql(names.length);
         assume(build.artifacts.sort()).eql(
@@ -407,15 +408,15 @@ describe('bffs', function () {
           request({
             url: fullUrl,
             strictSSL: false
-          }, (err, res, body) => {
-            if (err) return fn(err);
+          }, (err3, res, body) => {
+            if (err3) return fn(err3);
             assume(body).equals(fileMap[arti].actualContent);
 
             request({
               url: fullUrl + '.map',
               strictSSL: false
-            }, (err, res, body) => {
-              if (err) return fn(err);
+            }, (error, res, body) => {
+              if (error) return fn(error);
               assume(body).equals(fileMap[arti + '.map'].actualContent);
               fn();
             });
@@ -426,13 +427,13 @@ describe('bffs', function () {
     });
 
     function cleanup(error) {
-      bffs.unpublish(spec, (err) => next(error || err));
+      bffs.unpublish(spec, err => next(error || err));
     }
   });
 
   function generatePublishStub(spec, names) {
     var options = {
-      files: names.map((name) => {
+      files: names.map(name => {
         return generateFile(
           `module.exports = { name: ${name}, version: ${spec.version} }`
         );
@@ -459,8 +460,8 @@ describe('bffs', function () {
           request({
             url: fullUrl,
             strictSSL: false
-          }, (err, res, body) => {
-            if (err) return next(err);
+          }, (error, res, body) => {
+            if (error) return next(error);
             assume(body).equals(assumed.fileMap[arti].actualContent);
             next();
           });
@@ -542,15 +543,15 @@ describe('bffs', function () {
       /* istanbul ignore next */
       if (err) return next(err);
 
-      bffs.active(spec, function (err, active) {
+      bffs.active(spec, function (err2, active) {
         /* istanbul ignore next */
-        if (err) return next(err);
+        if (err2) return next(err2);
 
         assume(active).is.truthy();
         assume(active.length);
 
-        bffs.partial(spec, function (err, uuid) {
-          if (err) return next(err);
+        bffs.partial(spec, function (error, uuid) {
+          if (error) return next(error);
 
           assume(uuid).equals(id);
           bffs.stop(spec, next);
@@ -568,18 +569,18 @@ describe('bffs', function () {
       /* istanbul ignore next */
       if (err) return next(err);
 
-      bffs.start(spec, id, timeout, function (err) {
+      bffs.start(spec, id, timeout, function (err2) {
         /* istanbul ignore next */
-        if (err) return next(err);
+        if (err2) return next(err2);
 
-        bffs.active(spec, function (err, active) {
+        bffs.active(spec, function (err3, active) {
           /* istanbul ignore next */
-          if (err) return next(err);
+          if (err3) return next(err3);
 
           assume(active).is.truthy();
 
-          bffs.partial(spec, function (err, uuid) {
-            if (err) return next(err);
+          bffs.partial(spec, function (error, uuid) {
+            if (error) return next(error);
 
             assume(uuid).equals(id);
 
@@ -600,14 +601,14 @@ describe('bffs', function () {
       bffs.start(extend({ locale: locale }, spec), id, timeout, fn);
     }, err => {
       if (err) return next(err);
-      bffs.active(spec, (err, active) => {
-        if (err) return next(err);
+      bffs.active(spec, (err2, active) => {
+        if (err2) return next(err2);
         assume(active).is.truthy();
         assume(active.length).equals(3);
-        bffs.wipe(spec, err => {
-          if (err) return next(err);
-          bffs.active(spec, (err, active) => {
-            if (err) return next(err);
+        bffs.wipe(spec, err3 => {
+          if (err3) return next(err3);
+          bffs.active(spec, (error, active) => {
+            if (error) return next(error);
             assume(active.length).equals(0);
             next();
           });
@@ -628,9 +629,9 @@ describe('bffs', function () {
       if (err) return next(err);
 
       setTimeout(function () {
-        bffs.partial(spec, function (err, active) {
+        bffs.partial(spec, function (error, active) {
           /* istanbul ignore next */
-          if (err) return next(err);
+          if (error) return next(error);
 
           assume(active).is.falsey();
           next();
@@ -644,9 +645,9 @@ describe('bffs', function () {
     var id = '080a9809af-adfa89-adaf8981';
     var timeout = 1000;
 
-    bffs.start(spec, id, timeout, function (err) {
+    bffs.start(spec, id, timeout, function (error) {
       /* istanbul ignore next */
-      if (err) return next();
+      if (error) return next();
 
       bffs.start(spec, id + 'another', timeout, function (err) {
         assume(err).is.a('error');
