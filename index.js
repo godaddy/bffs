@@ -450,14 +450,14 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  *
  */
 BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
-  const lookups = files.map(file => cdn.checkUrl(file));
-  async.eachLimit(lookups, this.limit, (file, next) => {
+  const lookups = files.map(file => cdn.checkUrl(file.url));
+  async.eachLimit(lookups, this.limit, (uri, next) => {
     var nxt = once(next);
     // for whatever reason hyperquest allows this callback to be called twice
-    hyperquest(file, (err, res) => {
+    hyperquest(uri, (err, res) => {
       if (err) return nxt(err);
       if (res.statusCode !== 200)
-        return nxt(new Error(`Failed to upload ${file} to CDN with statusCode ${res.statusCode}`));
+        return nxt(new Error(`Failed to upload ${uri} to CDN with statusCode ${res.statusCode}`));
 
       nxt();
     });
