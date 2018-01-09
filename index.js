@@ -53,8 +53,8 @@ function BFFS(options) {
   this.envs = env;
 
   this.cdns = this.cdnify(cdn);
-
   this.limit = options.limit;
+
   //
   // Always fetch by locale so we default our locale property if it does not
   // exist.
@@ -424,7 +424,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
       //
       // Ensure everything exists in the CDN before we commit to the database
       //
-      bff._checkCdn(files, (err) => {
+      bff._checkCdn(files, cdn, (err) => {
         if (err) return fn(err);
 
         //
@@ -449,14 +449,15 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  * @api private
  *
  */
-BFFS.prototype._checkCdn = function checkCdn(files, fn) {
-  async.eachLimit(files, this.limit, (file, next) => {
+BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
+  const lookups = files.map(file => cdn.checkUrl(file));
+  async.eachLimit(lookups, this.limit, (file, next) => {
     var nxt = once(next);
     // for whatever reason hyperquest allows this callback to be called twice
-    hyperquest(file.url, (err, res) => {
+    hyperquest(file, (err, res) => {
       if (err) return nxt(err);
       if (res.statusCode !== 200)
-        return nxt(new Error(`Failed to upload ${file.url} to CDN with statusCode ${res.statusCode}`));
+        return nxt(new Error(`Failed to upload ${file} to CDN with statusCode ${res.statusCode}`));
 
       nxt();
     });
