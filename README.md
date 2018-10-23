@@ -82,7 +82,7 @@ This method requires 3 arguments:
 
 - Object with a build specification that needs to be fetched. It requires the
   name, version and env properties to be set.
-- Object with `compressed`, `content` and `fingerprint` as minimum requirements.
+- Object with a files array that contains `compressed`, `content` and `fingerprint` as minimum requirements.
   You don't need to add the `name`, `version` and `env` properties to this
   object as we will merge those in from the first supplied argument.
 - Completion callback which follows the error first callback pattern.
@@ -93,9 +93,12 @@ bffs.publish({
   version: '1.2.5',
   env: 'test'
 }, {
-  content: fs.readFileSync('file.js'),
-  compressed: fs.readFileSync('file.js.gz'),
-  fingerprint: fingerprinter(fs.readFileSync('file.js')).id
+  promote: false, // prevents creating BuildHead based on the created Build
+  files: [{
+    content: fs.readFileSync('file.js'),
+    compressed: fs.readFileSync('file.js.gz'),
+    fingerprint: fingerprinter(fs.readFileSync('file.js')).id
+  }]
 }, function (err) {
 
 });
