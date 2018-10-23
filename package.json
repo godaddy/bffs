@@ -4,14 +4,11 @@
   "description": "build files finder service",
   "main": "index.js",
   "scripts": {
-    "95%": "istanbul check-coverage --statements 95 --functions 95 --lines 95 --branches 95",
-    "test": "mocha test/*-test.js",
+    "test": "nyc --reporter=text --reporter=lcov mocha test/*-test.js",
     "test-debug": "mocha --debug-brk test/*-test.js",
     "watch": "mocha --watch test.js",
-    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- test/*-test.js",
     "eslint": "eslint-godaddy -c .eslintrc ./*.js test/bffs-test.js",
-    "pretest": "npm run eslint",
-    "test-travis": "istanbul cover node_modules/.bin/_mocha --report lcovonly -- test/*-test.js"
+    "pretest": "npm run eslint"
   },
   "repository": {
     "type": "git",
@@ -50,9 +47,9 @@
     "eslint-plugin-mocha": "^4.11.0",
     "fingerprinting": "^1.0.1",
     "ioredis": "^1.15.1",
-    "istanbul": "^0.4.5",
     "lodash.omit": "^4.5.0",
-    "mocha": "2.3.x",
+    "mocha": "^5.2.0",
+    "nyc": "^13.1.0",
     "request": "^2.88.0",
     "sinon": "^7.0.0",
     "uuid": "^2.0.1",
