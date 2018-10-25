@@ -25,9 +25,11 @@ var BFFS = require('..');
 var fs = require('fs');
 var bffConfig = require('./config');
 
+assume.use(require('assume-sinon'));
+
 describe('bffs', function () {
 
-  this.timeout(500000);
+  this.timeout(20000);
 
   var datastar;
   var models;
@@ -54,13 +56,12 @@ describe('bffs', function () {
 
   after(function (next) {
     redis.disconnect();
-    datastar.close(next);
+    models.drop(() => datastar.close(next));
   });
 
   beforeEach(function (next) {
     bffs = new BFFS(extend({
       log: sinon.spy(diagnostics('bffs-test')),
-      prefix: 'warehouse-test',
       datastar: datastar,
       models: models,
       store: redis
@@ -130,7 +131,7 @@ describe('bffs', function () {
     it('can check file like objects for 200s', function (next) {
       bffs._checkCdn([
         { url: 'https://www.godaddy.com' }
-      ], (err) => {
+      ], bffs.cdns.dev, (err) => {
         assume(err).is.falsey();
         next();
       });
@@ -139,7 +140,7 @@ describe('bffs', function () {
     it('will error when an object is not', function (next) {
       bffs._checkCdn([
         { url: 'https://img1.wsimg-com.ide/' + bffs.prefix + '/8976456/nts.js' }
-      ], (err) => {
+      ], bffs.cdns.dev, (err) => {
         assume(err).is.an('error');
         next();
       });
@@ -224,6 +225,21 @@ describe('bffs', function () {
 
   it('will log info to console when calling publish', function () {
     assume(bffs.log.callCount).equals(1);
+  });
+
+  it('will not create BuildHead on publish when options.promote=false', function (next) {
+    var newSpec = extend({}, spec, { version: '1.0.0' });
+    var opts = extend({}, fixture.files, { promote: false });
+    var buildSpy = sinon.spy(bffs.models.Build, 'create');
+    var headSpy = sinon.spy(bffs.models.BuildHead, 'create');
+
+    bffs.publish(newSpec, opts, function (err) {
+      assume(err).is.falsey();
+      assume(headSpy).is.not.called();
+      assume(buildSpy).is.called();
+      sinon.restore();
+      bffs.unpublish(newSpec, next);
+    });
   });
 
   it('stores files in the cdn', function (next) {

@@ -254,6 +254,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
   var Build = this.models.Build;
   var recommended = options.recommended || [];
   var artifacts = options.artifacts || [];
+  var promote = options.promote;
   var files = options.files;
   var env = spec.env;
   var bff = this;
@@ -356,7 +357,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
       //
       // Built set of operations to execute with standard payload.
       //
-      var operations = [Build, BuildHead].map(function (model) {
+      var operations = [Build, promote && BuildHead].filter(Boolean).map(function (model) {
         var entity = bff.normalize(extend({
           fingerprints: fingerprints,
           createDate: new Date(),
@@ -444,6 +445,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  * database
  *
  * @param {Array} files File Objects that correlate to the cassandra schema
+ * @param {Object} cdn CDNup instance
  * @param {Function} fn Completion callback
  * @returns {BFFS} The current instance
  * @api private
@@ -861,10 +863,10 @@ module.exports = BFFS;
  *
  * @returns {Object} Partioned and filtered set of files from config
  */
-BFFS.normalizeOpts = function normalizeOpts(options, env) {
-  options = options || {};
+BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
 
   const result = {};
+  result.promote = options.promote !== false;
   const config = options.config || { files: {}};
   const files = { all: options.files || [] };
   files.noSourceMap = files.all.filter((file) => file.extension !== '.map');

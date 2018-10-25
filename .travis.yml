@@ -1,0 +1,10 @@
+sudo: required
+language: node_js
+node_js:
+- '8'
+- '10'
+services:
+- cassandra
+- redis
+matrix:
+  fast_finish: true
