@@ -23,8 +23,6 @@ jobs:
     steps:
       - checkout
 
-      - restore_cache:
-          key: dockerize-{{ arch }}-v0.6.1
       - run:
           name: install dockerize if not found in cache
           command: |
@@ -36,10 +34,6 @@ jobs:
           environment:
             DOCKERIZE_VERSION: v0.6.1
 
-      - save_cache:
-          key: dockerize-{{ arch }}-v0.6.1
-          paths:
-            - /usr/local/bin/dockerize
       # Download and cache dependencies
       - restore_cache:
           keys:
