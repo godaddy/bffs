@@ -1,4 +1,5 @@
 # BFFS (Build files finder service)
+[[![Build Status](https://travis-ci.com/warehouseai/bffs.svg?branch=master)](https://travis-ci.com/warehouseai/bffs)![CircleCI](https://circleci.com/gh/warehouseai/bffs.svg?style=svg)](https://circleci.com/gh/warehouseai/bffs)
 
 BFFS is a module that helps with the storage and retrieval of build files for [`warehouse.ai`][warehouse.ai].
 
