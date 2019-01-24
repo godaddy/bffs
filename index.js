@@ -553,7 +553,62 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
 
   return bff;
 };
+/**
+ * Execute a promote operation on the given version, fetching previous version
+ *
+ * @param {Object} spec Build specification of name, env, version
+ * @param {Function} callback Continuation function
+ */
+BFFS.prototype.promote = function promote(spec, callback) {
+  var BuildHead = this.models.BuildHead;
+  var Build = this.models.Build;
+  let changed = false;
 
+  var fn = once(callback);
+  var operations = [];
+
+  this.stream(spec)
+    .pipe(parallel(this.limit, (build, next) => {
+      const locale = build.locale;
+      //
+      // We have to update the buildId if its different from the build itself
+      // so we dont break the linked list strategy
+      //
+      this.head({ locale, ...spec }, (err, head) => {
+        if (err) return next(err);
+        //
+        // Detect if this should actually be a rollback and set the proper
+        // rollback ID so that we preserved the linked list traversal.
+        //
+        if (head && head.buildId) {
+          if (head.buildId !== build.previousBuildId) {
+            changed = true;
+            var rollbackId = this.key(Object.assign({
+              locale, version: head.version
+            }, spec));
+
+            build.rollbackBuildIds = build.rollbackBuildIds || {};
+            build.rollbackBuildIds[new Date()] = rollbackId;
+          }
+        }
+
+        next(null, build);
+      });
+    }))
+    .on('error', fn)
+    .on('data', (data) => {
+      operations.push((next) => {
+        async.parallel([
+          (cb) => BuildHead.create(this._strip(data), cb),
+          changed && ((cb) => Build.update(data, cb))
+        ].filter(Boolean), next);
+      });
+    })
+    .on('end', () => {
+      if (!operations.length) return callback(new Error(`Builds not found for ${spec.name}, ${spec.env}, ${spec.version}`));
+      async.parallelLimit(operations, this.limit, fn);
+    });
+};
 /**
  * Execute a Rollback operation for the current HEAD version to the previous
  * build or a given version.
@@ -574,30 +629,6 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
 
   var fn = once(callback);
   var operations = [];
-
-  //
-  // I dont even.... For some reason I added value to build?
-  // I am disappointed in past me but we cannot change this
-  // unless we 1. drop tables or 2. we add a useless value named VALUE!?!?
-  // to the buildHead schema... for now we just strip it.
-  //
-  function strip(build) {
-    var b = build.toJSON();
-    delete b.value;
-    //
-    // Also remove createDate because null is not valid and it should be generated
-    //
-    delete b.createDate;
-    //
-    // We remove the previousBuildId when we do a `create` on a falsey value as
-    // it causes validation to fail as it is not a string.
-    //
-    if (has(b, 'previousBuildId')
-        && (b.previousBuildId === null
-            || typeof b.previousBuildId === 'undefined'))
-      delete b.previousBuildId;
-    return b;
-  }
 
   //
   // 1. Fetch the current version being returned
@@ -659,7 +690,7 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
       // 6. Replace the build HEAD to what we are rolling back to and the build
       //    itself so it gets the updated rollbackBuildIds
       //
-      miniBatch.push(bff._collect(BuildHead, 'create', strip(build)));
+      miniBatch.push(bff._collect(BuildHead, 'create', bff._strip(build)));
       miniBatch.push(bff._collect(Build, 'update', build));
       miniBatch.push(function execute(statements, next) {
         if (!next && typeof statements === 'function') {
@@ -710,6 +741,29 @@ BFFS.prototype.key = function key(spec, wot) {
       //
       return [spec.name, spec.env, spec.version, spec.locale].join('!');
   }
+};
+
+/**
+ * Strip irrelevant keys from build object before creating BuildHead
+ * @param {Build} build Datastar build object
+ * @returns {Object} object literal version of build stripped of properties
+ */
+BFFS.prototype._strip =  function strip(build) {
+  var b = build.toJSON();
+  delete b.value;
+  //
+  // Also remove createDate because null is not valid and it should be generated
+  //
+  delete b.createDate;
+  //
+  // We remove the previousBuildId when we do a `create` on a falsey value as
+  // it causes validation to fail as it is not a string.
+  //
+  if (has(b, 'previousBuildId')
+      && (b.previousBuildId === null
+          || typeof b.previousBuildId === 'undefined'))
+    delete b.previousBuildId;
+  return b;
 };
 
 /**

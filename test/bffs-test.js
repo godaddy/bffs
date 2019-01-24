@@ -242,6 +242,29 @@ describe('bffs', function () {
     });
   });
 
+  it('will promote a given build that has already been published to create buildhead', function (next) {
+    var newSpec = extend({}, spec, { version: '1.0.0' });
+    var opts = extend({}, fixture.files, { promote: false });
+    var buildSpy = sinon.spy(bffs.models.Build, 'create');
+    var headSpy = sinon.spy(bffs.models.BuildHead, 'create');
+
+    bffs.publish(newSpec, opts, function (err) {
+      assume(err).is.falsey();
+      assume(headSpy).is.not.called();
+      assume(buildSpy).is.called();
+
+      bffs.promote(newSpec, (err) => {
+        assume(err).is.falsey();
+        assume(headSpy).is.called();
+        bffs.head(newSpec, (err, head) => {
+          assume(err).is.falsey();
+          assume(head.version).equals(newSpec.version);
+          bffs.unpublish(newSpec, next);
+        });
+      });
+    });
+  });
+
   it('stores files in the cdn', function (next) {
     var upload = {
       name: 'cdn-example',
