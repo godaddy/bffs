@@ -105,6 +105,38 @@ bffs.publish({
 });
 ```
 
+#### bffs.promote
+
+Promotes the `Build` defined by the given `spec` (`name`, `env`, `version`) to be the `BuildHead` for
+every locale it was built for. Useful for when a build was published using `promote: false` functionality.
+
+```js
+bffs.promote({
+  name: 'my-package',
+  env: 'test',
+  version: '3.4.5'
+}, (err) => {
+  if (err) return /* handle me */
+})
+
+```
+
+#### bffs.rollback
+
+Sets the current `BuildHead` to the given `name`, `env`, and `version` while
+also setting keeping record of the prior build via rollbackBuildId.
+
+```js
+bffs.rollback({
+  name: 'my-package',
+  env: 'test'
+}, /* optional /* '1.5.6', (err) => {
+  if (err) return /* handle me */
+})
+
+```
+
+
 #### bffs.meta
 
 Get all the meta data from a given build for every support environment. This
