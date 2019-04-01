@@ -3,6 +3,7 @@ module.exports = {
   cdn: {
     test: {
       url: process.env.WRHS_TEST_AWS_TEST_URL,
+      acl: 'public-read',
       pkgcloud: {
         keyId: process.env.WRHS_TEST_AWS_KEY_ID,
         key: process.env.WRHS_TEST_AWS_KEY,
@@ -14,6 +15,7 @@ module.exports = {
     },
     dev: {
       url: process.env.WRHS_TEST_AWS_DEV_URL,
+      acl: 'public-read',
       pkgcloud: {
         keyId: process.env.WRHS_TEST_AWS_KEY_ID,
         key: process.env.WRHS_TEST_AWS_KEY,
