@@ -252,7 +252,8 @@ bffs.partial({
 
 ## Tests
 
-A Redis server and Cassandra should be running local.
+A key/value database (i.e Redis or similar) and Cassandra should be running
+local.
 
 ```sh
 npm test
