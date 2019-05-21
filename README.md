@@ -27,11 +27,11 @@ this is how you setup a new instance:
 ```js
 'use strict';
 
-const AWS = require('aws-sdk');
+const Redis = require('ioredis');
 const BFFS = require('bffs');
 
 const bffs = new BFFS({
-  store: new AWS.DynamoDB()
+  store: new Redis()
 });
 ```
 
