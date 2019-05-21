@@ -20,7 +20,7 @@ var isRedis = /^~~active/;
  *
  * Options:
  *
- * - store: Dynamis configuration.
+ * - store: key/value database configuration.
  * - env: Allowed environment variables.
  * - cdn: Configuration for the CDN.
  *
@@ -39,7 +39,7 @@ function BFFS(options) {
   var cdn = options.cdn;
 
   //
-  // We keep the running status of builds in redis.
+  // We keep the running status of builds in a key/value store.
   //
   this.store = store;
 
@@ -847,7 +847,7 @@ BFFS.prototype.partial = function partial(spec, fn) {
  * @returns {BFFS} The current instance (for fluent/chaining API).
  * @api public
  */
-BFFS.prototype.wipe = function cancel(spec, fn) {
+BFFS.prototype.wipe = function wipe(spec, fn) {
   var done = once(fn);
   var commands = [];
 
