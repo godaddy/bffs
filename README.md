@@ -241,7 +241,7 @@ bffs.partial({
 Stop the build and clear it from cache. It requires 2 arguments:
 
 ```js
-bffs.partial({
+bffs.wipe({
   name: 'wsb-pancakes',
   version: '1.2.5',
   env: 'test'
