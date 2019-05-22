@@ -1,7 +1,7 @@
 # `bffs`
 
 [![Version npm](https://img.shields.io/npm/v/bffs.svg?style=flat-square)](https://www.npmjs.com/package/bffs)
-[![License](https://img.shields.io/npm/l/wrhs.svg?style=flat-square)](https://github.com/warehouseai/bffs/blob/master/LICENSE)
+[![License](https://img.shields.io/npm/l/bffs.svg?style=flat-square)](https://github.com/warehouseai/bffs/blob/master/LICENSE)
 [![npm Downloads](https://img.shields.io/npm/dm/bffs.svg?style=flat-square)](https://npmcharts.com/compare/bffs?minimal=true)
 [![Build Status](https://travis-ci.org/warehouseai/bffs.svg?branch=master)](https://travis-ci.org/warehouseai/bffs)
 [![Dependencies](https://img.shields.io/david/warehouseai/bffs.svg?style=flat-square)](https://github.com/warehouseai/bffs/blob/master/package.json)
