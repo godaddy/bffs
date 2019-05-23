@@ -911,9 +911,10 @@ module.exports = BFFS;
  * Transforms all of the possible `options` into a consistent set
  * of expected values for future use based on the `env`.
  *
- * @param {Object} options Set of denormalized options
- *   - config: fully read wrhs.toml config
- * @param {string} env Current environment for the build.
+ * @param {Object}   options Set of denormalized options
+ * @param {Object}   options.config fully read wrhs.toml config
+ * @param {Object[]} options.files array of files output by webpack build
+ * @param {string}   env Current environment for the build.
  *
  * @returns {Object} Partioned and filtered set of files from config
  */
