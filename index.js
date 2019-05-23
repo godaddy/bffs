@@ -918,15 +918,18 @@ module.exports = BFFS;
  * @returns {Object} Partioned and filtered set of files from config
  */
 BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
+  const result = {
+    promote: options.promote !== false
+  };
 
-  const result = {};
-  result.promote = options.promote !== false;
-  const config = options.config || { files: {}};
+  const config = options.config || {};
+  config.files = config.files || {};
+  const recommended = config.files[env] || [];
+
   const files = { all: options.files || [] };
   files.noSourceMap = files.all.filter((file) => file.extension !== '.map');
   files.sourceMap = files.all.filter((file) => file.extension === '.map');
 
-  const recommended = config.files[env] || [];
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
   // be storing if they exist
