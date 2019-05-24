@@ -110,6 +110,14 @@ describe('bffs', function () {
       assume(result.recommended).is.an('array');
       assume(result.files).is.an('array');
     });
+
+    it('will not throw with no files config option', function () {
+      const result = BFFS.normalizeOpts({});
+      assume(result).is.an('object');
+      assume(result.artifacts).is.an('array');
+      assume(result.recommended).is.an('array');
+      assume(result.files).is.an('array');
+    });
   });
 
   it('can be initialized without `new`', function () {
