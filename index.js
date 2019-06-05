@@ -920,13 +920,14 @@ module.exports = BFFS;
 BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
 
   const result = {};
-  result.promote = options.promote !== false;
   const config = options.config || { files: {}};
+  const recommended = config.files[env] || [];
   const files = { all: options.files || [] };
+
+  result.promote = options.promote !== false;
   files.noSourceMap = files.all.filter((file) => file.extension !== '.map');
   files.sourceMap = files.all.filter((file) => file.extension === '.map');
 
-  const recommended = config.files[env] || [];
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
   // be storing if they exist
