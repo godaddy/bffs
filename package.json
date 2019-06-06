@@ -8,7 +8,7 @@
     "test-debug": "mocha --debug-brk test/*-test.js",
     "watch": "mocha --watch test.js",
     "eslint": "eslint-godaddy -c .eslintrc ./*.js test/bffs-test.js",
-    "pretest": "npm run eslint"
+    "posttest": "npm run eslint"
   },
   "repository": {
     "type": "git",

@@ -902,11 +902,6 @@ BFFS.defaults = {
   }
 };
 
-//
-// Expose the BFFS Interface.
-//
-module.exports = BFFS;
-
 /**
  * Transforms all of the possible `options` into a consistent set
  * of expected values for future use based on the `env`.
@@ -917,16 +912,15 @@ module.exports = BFFS;
  *
  * @returns {Object} Partioned and filtered set of files from config
  */
-BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
-
+BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
   const result = {};
   const config = options.config || { files: {}};
   const recommended = config.files[env] || [];
   const files = { all: options.files || [] };
 
   result.promote = options.promote !== false;
-  files.noSourceMap = files.all.filter((file) => file.extension !== '.map');
-  files.sourceMap = files.all.filter((file) => file.extension === '.map');
+  files.noSourceMap = files.all.filter(file => file.extension !== '.map');
+  files.sourceMap = files.all.filter(file => file.extension === '.map');
 
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
@@ -947,6 +941,7 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
     return acc;
   }, {});
 
+
   function filePath(file) {
     return file && file.fingerprint && file.filename
       ? path.join(file.fingerprint, file.filename)
@@ -966,12 +961,13 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
   //
   result.artifacts = artifacts.length
     ? artifacts.map(normalize).filter(Boolean)
-    : files.noSourceMap.map((file) => filePath(file));
+    : files.noSourceMap.map(file => filePath(file));
 
   result.recommended = recommended.map(normalize).filter(Boolean);
+
   //
   // XXX: Filter and map the files so we store the path to the sourcemap as the sourcemap
-  // of the file it references. It doesnt need to be stored as a separate
+  // of the file it references. It doesn't need to be stored as a separate
   // build-file
   //
   result.files = files.noSourceMap.map((file) => {
@@ -982,3 +978,9 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
 
   return result;
 };
+
+//
+// Expose the BFFS Interface.
+//
+module.exports = BFFS;
+
