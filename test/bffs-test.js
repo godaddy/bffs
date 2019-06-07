@@ -67,8 +67,8 @@ describe('bffs', function () {
       store: redis
     }, bffConfig));
 
-    files = fixture.files;
     data = fixture.files.files[0];
+    files = fixture.files;
     spec = fixture.spec;
 
     bffs.publish(spec, files, next);
@@ -102,13 +102,66 @@ describe('bffs', function () {
     bffs.unpublish(spec, next);
   });
 
-  describe('normalizeOpts', function () {
+  describe('#normalizeOpts', function () {
+    const denormalizedConfig = {
+      files: [{
+        extension: '.js',
+        filename: 'testme.andthen.js',
+        fingerprint: 'a083jada091tr0l0l01zdjD'
+      }, {
+        extension: '.map',
+        filename: 'testme.andthen.js.map',
+        fingerprint: '8b45ace664325c31fa95bcf0d56e940f'
+      }],
+      config: {
+        files: {
+          dev: ['testme.andthen.js']
+        }
+      }
+    };
+
     it('will not throw with no options', function () {
       const result = BFFS.normalizeOpts();
+
       assume(result).is.an('object');
       assume(result.artifacts).is.an('array');
       assume(result.recommended).is.an('array');
       assume(result.files).is.an('array');
+    });
+
+    it('promotes file if not explicit `false`', function () {
+      let result = BFFS.normalizeOpts(denormalizedConfig);
+
+      assume(result).is.an('object');
+      assume(result).to.have.property('promote', true);
+
+      result = BFFS.normalizeOpts({
+        promote: false,
+        ...denormalizedConfig
+      });
+
+      assume(result).to.have.property('promote', false);
+    });
+
+    it('will recommend files for upload based on config', function () {
+      const result = BFFS.normalizeOpts(denormalizedConfig);
+      const combined = [
+        denormalizedConfig.files[0].fingerprint,
+        denormalizedConfig.files[0].filename
+      ].join(path.sep);
+
+      assume(result).is.an('object');
+      assume(result.artifacts).is.an('array');
+      assume(result.artifacts).to.deep.equal([combined]);
+      assume(result.recommended).is.an('array');
+      assume(result.recommended).to.deep.equal([combined]);
+      assume(result.files).is.an('array');
+      assume(result.files[0]).to.deep.equal(denormalizedConfig.files[0]);
+      assume(result.files[0].sourcemap).to.deep.equal({
+        extension: '.map',
+        filename: denormalizedConfig.files[1].filename,
+        fingerprint: denormalizedConfig.files[0].fingerprint
+      });
     });
   });
 
@@ -127,7 +180,7 @@ describe('bffs', function () {
     assume(init).throws(/Requires proper datastar instance and models/);
   });
 
-  describe('cdn', function () {
+  describe('#cdn', function () {
     it('can check file like objects for 200s', function (next) {
       bffs._checkCdn([
         { url: 'https://www.godaddy.com' }
@@ -410,7 +463,7 @@ describe('bffs', function () {
     var sourcemaps = sourcemapNames.map((name) => {
       var base = name.slice(0, -(path.extname(name).length));
       var ref = resources.find((res) => res.filename === base);
-      return generateFile(`${name}/*map of ref.filename*/`, name, ref.fingerprint);
+      return generateFile(`${name}/*map of ${ref.filename}*/`, name, ref.fingerprint);
     });
 
     var files = resources.concat(sourcemaps);
@@ -481,7 +534,7 @@ describe('bffs', function () {
     return options;
   }
 
-  describe('rollback', function () {
+  describe('#rollback', function () {
 
     function validate(spec, assumed, callback) {
       async.parallel({

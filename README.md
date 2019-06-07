@@ -252,10 +252,17 @@ bffs.wipe({
 
 ## Tests
 
-A key/value database (i.e Redis or similar) and Cassandra should be running
-local.
+A key/value database (i.e Redis or similar) should be running local. In
+addition, file uploads require environment variables to be set in the terminal
+session running the tests. The tests use Amazon S3 to perform file uploads.
 
 ```sh
+WRHS_TEST_AWS_KEY_ID=                       // API key id
+WRHS_TEST_AWS_KEY=                          // API key
+WRHS_TEST_AWS_PREFIX=                       // S3 bucket name
+WRHS_TEST_AWS_TEST_URL=                     // full path to S3 bucket in test
+WRHS_TEST_AWS_DEV_URL=                      // full path to S3 bucket in dev
+
 npm test
 ```
 

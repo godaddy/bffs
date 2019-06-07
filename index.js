@@ -902,11 +902,6 @@ BFFS.defaults = {
   }
 };
 
-//
-// Expose the BFFS Interface.
-//
-module.exports = BFFS;
-
 /**
  * Transforms all of the possible `options` into a consistent set
  * of expected values for future use based on the `env`.
@@ -917,16 +912,16 @@ module.exports = BFFS;
  *
  * @returns {Object} Partioned and filtered set of files from config
  */
-BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
-
+BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
   const result = {};
-  result.promote = options.promote !== false;
   const config = options.config || { files: {}};
-  const files = { all: options.files || [] };
-  files.noSourceMap = files.all.filter((file) => file.extension !== '.map');
-  files.sourceMap = files.all.filter((file) => file.extension === '.map');
-
   const recommended = config.files[env] || [];
+  const files = { all: options.files || [] };
+
+  result.promote = options.promote !== false;
+  files.noSourceMap = files.all.filter(file => file.extension !== '.map');
+  files.sourceMap = files.all.filter(file => file.extension === '.map');
+
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
   // be storing if they exist
@@ -965,19 +960,34 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env) {
   //
   result.artifacts = artifacts.length
     ? artifacts.map(normalize).filter(Boolean)
-    : files.noSourceMap.map((file) => filePath(file));
+    : files.noSourceMap.map(file => filePath(file));
 
   result.recommended = recommended.map(normalize).filter(Boolean);
+
   //
-  // XXX: Filter and map the files so we store the path to the sourcemap as the sourcemap
-  // of the file it references. It doesnt need to be stored as a separate
-  // build-file
+  // Map non-sourceMap files to add the sourceMap as property under the file it
+  // references. Overwrite the fingerprint of the sourceMap to its dependent
+  // file. The sourceMap and JS content need to be stored under the same hash.
+  // Otherwise a relative `sourceMappingURL` will not work. The sourceMaps do
+  // not need to be stored as a separate build-file.
   //
   result.files = files.noSourceMap.map((file) => {
     const sourceMap = sourceMaps[file.filename];
-    if (sourceMap) file.sourcemap = sourceMap;
+    if (sourceMap) {
+      file.sourcemap = {
+        ...sourceMap,
+        fingerprint: file.fingerprint
+      };
+    }
+
     return file;
   });
 
   return result;
 };
+
+//
+// Expose the BFFS Interface.
+//
+module.exports = BFFS;
+
