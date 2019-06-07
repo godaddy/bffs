@@ -941,7 +941,6 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
     return acc;
   }, {});
 
-
   function filePath(file) {
     return file && file.fingerprint && file.filename
       ? path.join(file.fingerprint, file.filename)
@@ -966,13 +965,21 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
   result.recommended = recommended.map(normalize).filter(Boolean);
 
   //
-  // XXX: Filter and map the files so we store the path to the sourcemap as the sourcemap
-  // of the file it references. It doesn't need to be stored as a separate
-  // build-file
+  // Map non-sourceMap files to add the sourceMap as property under the file it
+  // references. Overwrite the fingerprint of the sourceMap to its dependent
+  // file. The sourceMap and JS content need to be stored under the same hash.
+  // Otherwise a relative `sourceMappingURL` will not work. The sourceMaps do
+  // not need to be stored as a separate build-file.
   //
   result.files = files.noSourceMap.map((file) => {
     const sourceMap = sourceMaps[file.filename];
-    if (sourceMap) file.sourcemap = sourceMap;
+    if (sourceMap) {
+      file.sourcemap = {
+        ...sourceMap,
+        fingerprint: file.fingerprint
+      };
+    }
+
     return file;
   });
 

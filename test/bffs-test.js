@@ -160,7 +160,7 @@ describe('bffs', function () {
       assume(result.files[0].sourcemap).to.deep.equal({
         extension: '.map',
         filename: denormalizedConfig.files[1].filename,
-        fingerprint: denormalizedConfig.files[1].fingerprint
+        fingerprint: denormalizedConfig.files[0].fingerprint
       });
     });
   });
