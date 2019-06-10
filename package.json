@@ -8,7 +8,7 @@
     "test-debug": "mocha --debug-brk test/*-test.js",
     "watch": "mocha --watch test.js",
     "eslint": "eslint-godaddy -c .eslintrc ./*.js test/bffs-test.js",
-    "pretest": "npm run eslint"
+    "posttest": "npm run eslint"
   },
   "repository": {
     "type": "git",
@@ -51,7 +51,7 @@
     "mocha": "^6.1.4",
     "nyc": "^14.1.1",
     "request": "^2.88.0",
-    "sinon": "^7.0.0",
+    "sinon": "^7.3.2",
     "uuid": "^2.0.1",
     "warehouse-models": "^5.9.1"
   }

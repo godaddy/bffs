@@ -1,19 +1,25 @@
-# BFFS (Build files finder service)
-[![Build Status](https://travis-ci.com/warehouseai/bffs.svg?branch=master)](https://travis-ci.com/warehouseai/bffs)[![CircleCI](https://circleci.com/gh/warehouseai/bffs.svg?style=svg)](https://circleci.com/gh/warehouseai/bffs)
+# `bffs`
 
-BFFS is a module that helps with the storage and retrieval of build files for [`warehouse.ai`][warehouse.ai].
+[![Version npm](https://img.shields.io/npm/v/bffs.svg?style=flat-square)](https://www.npmjs.com/package/bffs)
+[![License](https://img.shields.io/npm/l/bffs.svg?style=flat-square)](https://github.com/warehouseai/bffs/blob/master/LICENSE)
+[![npm Downloads](https://img.shields.io/npm/dm/bffs.svg?style=flat-square)](https://npmcharts.com/compare/bffs?minimal=true)
+[![Build Status](https://travis-ci.org/warehouseai/bffs.svg?branch=master)](https://travis-ci.org/warehouseai/bffs)
+[![Dependencies](https://img.shields.io/david/warehouseai/bffs.svg?style=flat-square)](https://github.com/warehouseai/bffs/blob/master/package.json)
+
+BFFS (Build files finder service) is a module that helps with the storage and
+retrieval of build files for [`warehouse.ai`][warehouse.ai].
 
 It stores the build files and gzip version of the build file. In addition to
 that it also stores all meta for a given build so it can be retrieved again by
 searching for the spec it was build with (version, name and environment)
 
-## Installation
+## Install
 
 ```
 npm install --save bffs
 ```
 
-## API
+## Usage
 
 In all API examples we assume that you've already created a new BFFS instance,
 this is how you setup a new instance:
@@ -21,10 +27,11 @@ this is how you setup a new instance:
 ```js
 'use strict';
 
-var BFFS = require('bffs');
+const Redis = require('ioredis');
+const BFFS = require('bffs');
 
-var bffs = new BFFS({
-  store: require('ioredis')()
+const bffs = new BFFS({
+  store: new Redis()
 });
 ```
 
@@ -36,6 +43,8 @@ argument this options object can contain the following properties:
   hotpath cache optimization.
 - `cdn` The root or prefix of the build files URL's.
 - `env` An array of environments that we support.
+
+## API
 
 #### bffs.build
 
@@ -83,7 +92,8 @@ This method requires 3 arguments:
 
 - Object with a build specification that needs to be fetched. It requires the
   name, version and env properties to be set.
-- Object with a files array that contains `compressed`, `content` and `fingerprint` as minimum requirements.
+- Object with a files array that contains `compressed`, `content` and
+  `fingerprint` as minimum requirements.
   You don't need to add the `name`, `version` and `env` properties to this
   object as we will merge those in from the first supplied argument.
 - Completion callback which follows the error first callback pattern.
@@ -107,8 +117,9 @@ bffs.publish({
 
 #### bffs.promote
 
-Promotes the `Build` defined by the given `spec` (`name`, `env`, `version`) to be the `BuildHead` for
-every locale it was built for. Useful for when a build was published using `promote: false` functionality.
+Promotes the `Build` defined by the given `spec` (`name`, `env`, `version`) to
+be the `BuildHead` for every locale it was built for. Useful for when a build
+was published using `promote: false` functionality.
 
 ```js
 bffs.promote({
@@ -179,8 +190,8 @@ bffs.start({
 
 #### bffs.active
 
-Check if a given build set is active and returns the `jobs` of the builds if this is the
-case. It requires 2 arguments:
+Check if a given build set is active and returns the `jobs` of the builds
+if this is the case. It requires 2 arguments:
 
 - Object with a build specification that needs to be fetched. It requires the
   name, version and env properties to be set.
@@ -211,13 +222,48 @@ bffs.stop({
 });
 ```
 
-## Tests
-```sh
-npm test
+#### bffs.partial
+
+Get running build information. It requires 2 arguments:
+
+```js
+bffs.partial({
+  name: 'wsb-pancakes',
+  version: '1.2.5',
+  env: 'test'
+}, function (err, job) {
+
+});
 ```
 
-## License
+#### bffs.wipe
 
-MIT
+Stop the build and clear it from cache. It requires 2 arguments:
+
+```js
+bffs.wipe({
+  name: 'wsb-pancakes',
+  version: '1.2.5',
+  env: 'test'
+}, function (err) {
+
+});
+```
+
+## Tests
+
+A key/value database (i.e Redis or similar) should be running local. In
+addition, file uploads require environment variables to be set in the terminal
+session running the tests. The tests use Amazon S3 to perform file uploads.
+
+```sh
+WRHS_TEST_AWS_KEY_ID=                       // API key id
+WRHS_TEST_AWS_KEY=                          // API key
+WRHS_TEST_AWS_PREFIX=                       // S3 bucket name
+WRHS_TEST_AWS_TEST_URL=                     // full path to S3 bucket in test
+WRHS_TEST_AWS_DEV_URL=                      // full path to S3 bucket in dev
+
+npm test
+```
 
 [warehouse.ai]: https://github.com/godaddy/warehouse.ai
