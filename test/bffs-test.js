@@ -101,8 +101,8 @@ describe('bffs', function () {
   function reqExist(url, done) {
     const gz = url + '.gz';
     async.parallel([
-      (next) => request({ url, strictSSL: false }, (err, res, body) => next(err, body)),
-      (next) => request({ url: gz, strictSSL: false }, (err, res, body) => next(err, body))
+      (next) => request({ url, strictSSL: false }, (err, res, body) => next(err, { res, body })),
+      (next) => request({ url: gz, strictSSL: false }, (err, res, body) => next(err, { res, body }))
     ], done);
   }
 
@@ -365,8 +365,10 @@ describe('bffs', function () {
       reqExist(bffs.cdns[upload.env].url() + '897687a456/24-finger-prints.js', function (error, [one, two]) {
         if (error) return next(error);
 
-        assume(one).equals(msg);
-        assume(two).exists();
+        assume(one.body).equals(msg);
+        assume(two.body).exists();
+        assume(two.res.headers['content-encoding']).equals('gzip');
+        assume(two.res.headers['content-type']).equals('application/javascript');
         cleanup();
       });
     });
