@@ -411,7 +411,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             extension: file.extension,
             filename: file.filename,
             fingerprint: print,
-            url: gz ? file.url : file.compressedUrl
+            url: gz ? file.compressedUrl : file.url
           }, payload);
 
           return entity;
