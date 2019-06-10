@@ -351,7 +351,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             file.compressedUrl = url;
             fn(err);
           });
-        }
+        },
         file.sourcemap && function (fn) {
           // URL doesnt matter since it is relative to the file that includes it
           // as a comment
@@ -926,13 +926,13 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
 
   const config = options.config || {};
   config.files = config.files || {};
-  
+
   const recommended = config.files[env] || [];
   const files = { all: options.files || [] };
 
   files.noSourceMap = files.all.filter(file => file.extension !== '.map');
   files.sourceMap = files.all.filter(file => file.extension === '.map');
-  
+
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
   // be storing if they exist
