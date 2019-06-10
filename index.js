@@ -906,22 +906,27 @@ BFFS.defaults = {
  * Transforms all of the possible `options` into a consistent set
  * of expected values for future use based on the `env`.
  *
- * @param {Object} options Set of denormalized options
- *   - config: fully read wrhs.toml config
- * @param {string} env Current environment for the build.
+ * @param {Object}   options Set of denormalized options
+ * @param {Object}   options.config fully read wrhs.toml config
+ * @param {Object[]} options.files array of files output by webpack build
+ * @param {string}   env Current environment for the build.
  *
  * @returns {Object} Partioned and filtered set of files from config
  */
 BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
-  const result = {};
-  const config = options.config || { files: {}};
+  const result = {
+    promote: options.promote !== false
+  };
+
+  const config = options.config || {};
+  config.files = config.files || {};
+  
   const recommended = config.files[env] || [];
   const files = { all: options.files || [] };
 
-  result.promote = options.promote !== false;
   files.noSourceMap = files.all.filter(file => file.extension !== '.map');
   files.sourceMap = files.all.filter(file => file.extension === '.map');
-
+  
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
   // be storing if they exist

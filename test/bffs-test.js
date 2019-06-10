@@ -163,6 +163,14 @@ describe('bffs', function () {
         fingerprint: denormalizedConfig.files[0].fingerprint
       });
     });
+
+    it('will not throw with no files config option', function () {
+      const result = BFFS.normalizeOpts({});
+      assume(result).is.an('object');
+      assume(result.artifacts).is.an('array');
+      assume(result.recommended).is.an('array');
+      assume(result.files).is.an('array');
+    });
   });
 
   it('can be initialized without `new`', function () {
@@ -183,7 +191,7 @@ describe('bffs', function () {
   describe('#cdn', function () {
     it('can check file like objects for 200s', function (next) {
       bffs._checkCdn([
-        { url: 'https://www.godaddy.com' }
+        { url: 'https://github.com' }
       ], bffs.cdns.dev, (err) => {
         assume(err).is.falsey();
         next();
