@@ -346,6 +346,12 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             fn(err);
           });
         },
+        file.compressed && function (fn) {
+          cdn.upload(file.compressed, bff.key(file, 'file') + '.gz', (err, url) => {
+            file.compressedUrl = url;
+            fn(err);
+          });
+        }
         file.sourcemap && function (fn) {
           // URL doesnt matter since it is relative to the file that includes it
           // as a comment
@@ -405,7 +411,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             extension: file.extension,
             filename: file.filename,
             fingerprint: print,
-            url: file.url
+            url: gz ? file.url : file.compressedUrl
           }, payload);
 
           return entity;
