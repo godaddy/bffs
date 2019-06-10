@@ -191,7 +191,7 @@ describe('bffs', function () {
   describe('#cdn', function () {
     it('can check file like objects for 200s', function (next) {
       bffs._checkCdn([
-        { url: 'https://www.godaddy.com' }
+        { url: 'https://github.com' }
       ], bffs.cdns.dev, (err) => {
         assume(err).is.falsey();
         next();
