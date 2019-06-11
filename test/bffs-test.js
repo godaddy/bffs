@@ -98,6 +98,14 @@ describe('bffs', function () {
     };
   }
 
+  function reqExist(url, done) {
+    const gz = url + '.gz';
+    async.parallel([
+      (next) => request({ url, strictSSL: false }, (err, res, body) => next(err, { res, body })),
+      (next) => request({ url: gz, strictSSL: false }, (err, res, body) => next(err, { res, body }))
+    ], done);
+  }
+
   afterEach(function (next) {
     bffs.unpublish(spec, next);
   });
@@ -354,13 +362,13 @@ describe('bffs', function () {
     }, function published(err) {
       if (err) return next(err);
 
-      request({
-        url: bffs.cdns[upload.env].url() + '897687a456/24-finger-prints.js',
-        strictSSL: false
-      }, function (error, res, body) {
+      reqExist(bffs.cdns[upload.env].url() + '897687a456/24-finger-prints.js', function (error, [one, two]) {
         if (error) return next(error);
 
-        assume(body).equals(msg);
+        assume(one.body).equals(msg);
+        assume(two.body).exists();
+        assume(two.res.headers['content-encoding']).equals('gzip');
+        assume(two.res.headers['content-type']).equals('application/javascript');
         cleanup();
       });
     });

@@ -346,6 +346,12 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             fn(err);
           });
         },
+        file.compressed && function (fn) {
+          cdn.upload(file.compressed, bff.key(file, 'file') + '.gz', (err, url) => {
+            file.compressedUrl = url;
+            fn(err);
+          });
+        },
         file.sourcemap && function (fn) {
           // URL doesnt matter since it is relative to the file that includes it
           // as a comment
@@ -405,7 +411,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
             extension: file.extension,
             filename: file.filename,
             fingerprint: print,
-            url: file.url
+            url: gz ? file.compressedUrl : file.url
           }, payload);
 
           return entity;
@@ -920,13 +926,13 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
 
   const config = options.config || {};
   config.files = config.files || {};
-  
+
   const recommended = config.files[env] || [];
   const files = { all: options.files || [] };
 
   files.noSourceMap = files.all.filter(file => file.extension !== '.map');
   files.sourceMap = files.all.filter(file => file.extension === '.map');
-  
+
   //
   // XXX Merge all defined environments into the sum of artifacts that we will
   // be storing if they exist
