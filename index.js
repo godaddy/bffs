@@ -930,6 +930,15 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
   const recommended = config.files[env] || [];
   const files = { all: options.files || [] };
 
+  files.lookup = files.all.reduce((acc, file) => {
+    // include compressed files so they can be more first class and used to
+    // build the artifacts and recommended lists
+    const gzName = file.compressed && path.basename(file.compressed);
+    acc[file.filename] = file;
+    if (gzName) acc[gzName] = extend({}, file, { filename: gzName });
+    return acc;
+  }, {});
+
   files.noSourceMap = files.all.filter(file => file.extension !== '.map');
   files.sourceMap = files.all.filter(file => file.extension === '.map');
 
@@ -957,11 +966,13 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
       ? path.join(file.fingerprint, file.filename)
       : null;
   }
-
+  //
+  // We need to support both the compressed file as well as the regular file so
+  // this becomes even more inefficient
+  //
   function normalize(fileP) {
     const base = path.basename(fileP);
-    // XXX: we can make a lookup table if this is too expensive on each .map call
-    const file = files.all.find((file) => file.filename === base);
+    const file = files.lookup[base];
     return filePath(file);
   }
 

@@ -128,6 +128,25 @@ describe('bffs', function () {
       }
     };
 
+    const gzippedConfig = {
+      files: [{
+        extension: '.js',
+        compressed: 'file/path/to/testme.andthen.js.gz',
+        filename: 'testme.andthen.js',
+        fingerprint: 'a083jada091tr0l0l01zdjD'
+      }, {
+        extension: '.map',
+        compressed: 'file/path/to/testme.andthen.js.map.gz',
+        filename: 'testme.andthen.js.map',
+        fingerprint: '8b45ace664325c31fa95bcf0d56e940f'
+      }],
+      config: {
+        files: {
+          dev: ['testme.andthen.js.gz']
+        }
+      }
+    };
+
     it('will not throw with no options', function () {
       const result = BFFS.normalizeOpts();
 
@@ -169,6 +188,28 @@ describe('bffs', function () {
         extension: '.map',
         filename: denormalizedConfig.files[1].filename,
         fingerprint: denormalizedConfig.files[0].fingerprint
+      });
+    });
+
+    it('will recommend gzip files for upload based on config', function () {
+      const result = BFFS.normalizeOpts(gzippedConfig);
+      const combined = [
+        gzippedConfig.files[0].fingerprint,
+        path.basename(gzippedConfig.files[0].compressed)
+      ].join(path.sep);
+
+      assume(result).is.an('object');
+      assume(result.artifacts).is.an('array');
+      assume(result.artifacts).to.deep.equal([combined]);
+      assume(result.recommended).is.an('array');
+      assume(result.recommended).to.deep.equal([combined]);
+      assume(result.files).is.an('array');
+      assume(result.files[0]).to.deep.equal(gzippedConfig.files[0]);
+      assume(result.files[0].sourcemap).to.deep.equal({
+        extension: '.map',
+        compressed: gzippedConfig.files[1].compressed,
+        filename: gzippedConfig.files[1].filename,
+        fingerprint: gzippedConfig.files[0].fingerprint
       });
     });
 
