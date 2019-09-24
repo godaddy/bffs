@@ -266,7 +266,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
   //
   if (!spec.version) return fn(new Error('Missing version property in build spec.'));
   if (!spec.name) return fn(new Error('Missing name property in build spec.'));
-  if (!~this.envs.indexOf(spec.env)) return fn(new Error('Unsupported env variable.'));
+  if (!~this.envs.indexOf(spec.env)) return fn(new Error('Unsupported env variable ' + spec.env));
 
   if (!Array.isArray(files) || !files.length) return fn(new Error('options.files is required and must be an Array.'));
 
@@ -275,24 +275,25 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
   //
   var i = files.length;
   var error;
-  var data;
+  var file;
 
   while (!error && i--) {
-    data = files[i];
+    file = files[i];
+    var filename = file.filename || file.fingerprint || 'Unknown';
 
-    if (!data.compressed) {
-      error = new Error('Missing builds compressed content.');
-    } else if (!data.content) {
-      error = new Error('Missing builds content.');
-    } else if (!data.fingerprint) {
-      error = new Error('Missing builds fingerprint.');
-    } else if (!data.extension) {
-      error = new Error('Missing builds extension.');
+    if (!file.compressed) {
+      error = new Error('Missing builds compressed content for ' + filename);
+    } else if (!file.content) {
+      error = new Error('Missing builds content for ' + filename);
+    } else if (!file.fingerprint) {
+      error = new Error('Missing builds fingerprint for ' + filename);
+    } else if (!file.extension) {
+      error = new Error('Missing builds extension for ' + filename);
     }
 
     if (error) return fn(error);
 
-    this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, files[i].filename, files[i].fingerprint);
+    this.log('Publish file for %j - filename: %s, fingerprint: %s', spec, file.filename, file.fingerprint);
   }
 
   //
