@@ -110,7 +110,6 @@ BFFS.prototype.cdnify = function cdnify(options) {
   var cdns = this.envs.reduce((acc, env) => {
     options[env] = options[env] || {};
     var prefix = options[env].prefix || this.prefix;
-    console.log(prefix, env, options[env]);
     acc[env] = new CDNUp(prefix, extend({ env }, options[env]));
     return acc;
   }, {});
@@ -461,6 +460,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  */
 BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
   const lookups = files.map(file => cdn.checkUrl(file.url));
+
   async.eachLimit(lookups, this.limit, (uri, next) => {
     var nxt = once(next);
     // for whatever reason hyperquest allows this callback to be called twice

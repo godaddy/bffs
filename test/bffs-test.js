@@ -40,6 +40,8 @@ describe('bffs', function () { // eslint-disable-line
 
   //
   // Setup database and the models before anything else
+  // S3 configuration for both environments is identical for
+  // tests, only single bucket needs to be prepared.
   //
   before(function (next) {
     const dynamoDriver = new DynamoDB(config.dynamodb);
