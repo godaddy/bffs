@@ -14,8 +14,7 @@ var path = require('path');
 var url = require('url');
 var extend = require('deep-extend');
 var fixture = require('./fixture');
-var config = require('../config');
-var Redis  = require('ioredis');
+var Redis = require('ioredis');
 var uuid = require('uuid');
 var omit = require('lodash.omit');
 var request = require('request');
@@ -25,7 +24,7 @@ var sinon = require('sinon');
 var diagnostics = require('diagnostics');
 var BFFS = require('..');
 var fs = require('fs');
-var bffConfig = require('./config');
+var config = require('./config');
 
 assume.use(require('assume-sinon'));
 
@@ -43,7 +42,7 @@ describe('bffs', function () { // eslint-disable-line
   // Setup database and the models before anything else
   //
   before(function (next) {
-    const dynamoDriver = new DynamoDB(config);
+    const dynamoDriver = new DynamoDB(config.dynamodb);
 
     dynamo.dynamoDriver(dynamoDriver);
     models = wrhs(dynamo);
@@ -68,7 +67,7 @@ describe('bffs', function () { // eslint-disable-line
       db: dynamo,
       models: models,
       store: redis
-    }, bffConfig));
+    }, config));
 
     data = fixture.files.files[0];
     files = fixture.files;

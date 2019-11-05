@@ -110,6 +110,7 @@ BFFS.prototype.cdnify = function cdnify(options) {
   var cdns = this.envs.reduce((acc, env) => {
     options[env] = options[env] || {};
     var prefix = options[env].prefix || this.prefix;
+    console.log(prefix, env, options[env]);
     acc[env] = new CDNUp(prefix, extend({ env }, options[env]));
     return acc;
   }, {});
