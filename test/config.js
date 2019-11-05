@@ -1,12 +1,12 @@
 module.exports = {
-  prefix: process.env.WRHS_TEST_AWS_PREFIX,
+  prefix: 'wrhs_tests',
   cdn: {
     test: {
-      url: process.env.WRHS_TEST_AWS_TEST_URL,
+      url: 'http://localhost:4572',
       acl: 'public-read',
       pkgcloud: {
-        keyId: process.env.WRHS_TEST_AWS_KEY_ID,
-        key: process.env.WRHS_TEST_AWS_KEY,
+        keyID: 'fakeId',
+        key: 'fakeKey',
         provider: 'amazon',
         endpoint: 's3.amazonaws.com',
         region: 'us-west-1',
@@ -14,11 +14,11 @@ module.exports = {
       }
     },
     dev: {
-      url: process.env.WRHS_TEST_AWS_DEV_URL,
+      url: 'http://localhost:4572',
       acl: 'public-read',
       pkgcloud: {
-        keyId: process.env.WRHS_TEST_AWS_KEY_ID,
-        key: process.env.WRHS_TEST_AWS_KEY,
+        keyID: 'fakeId',
+        key: 'fakeKey',
         provider: 'amazon',
         endpoint: 's3.amazonaws.com',
         region: 'us-west-1',

@@ -6,6 +6,9 @@
 /* eslint no-redeclare: 0 */
 
 var wrhs = require('warehouse-models');
+var { DynamoDB } = require('aws-sdk');
+var dynamo = require('dynamodb-x');
+var AwsLiveness = require('aws-liveness');
 var fingerprinting = require('fingerprinting');
 var path = require('path');
 var url = require('url');
@@ -16,7 +19,6 @@ var Redis  = require('ioredis');
 var uuid = require('uuid');
 var omit = require('lodash.omit');
 var request = require('request');
-var Datastar = require('datastar');
 var assume = require('assume');
 var async = require('async');
 var sinon = require('sinon');
@@ -27,11 +29,9 @@ var bffConfig = require('./config');
 
 assume.use(require('assume-sinon'));
 
-describe('bffs', function () {
-
+describe('bffs', function () { // eslint-disable-line
   this.timeout(20000);
 
-  var datastar;
   var models;
   var redis;
   var files;
@@ -40,29 +40,32 @@ describe('bffs', function () {
   var bffs;
 
   //
-  // Setup datastar and the models before anything else
+  // Setup database and the models before anything else
   //
   before(function (next) {
-    datastar = new Datastar(config);
-    models = wrhs(datastar);
-    redis = new Redis()
-      .on('error', err => console.error(err));
+    const dynamoDriver = new DynamoDB(config);
 
-    datastar.connect(function (err) {
-      if (err) return next(err);
+    dynamo.dynamoDriver(dynamoDriver);
+    models = wrhs(dynamo);
+    redis = new Redis().on('error', console.error);
+
+    new AwsLiveness().waitForServices({
+      clients: [dynamoDriver],
+      waitSeconds: 60
+    }).then(function () {
       models.ensure(next);
-    });
+    }).catch(next);
   });
 
   after(function (next) {
     redis.disconnect();
-    models.drop(() => datastar.close(next));
+    // models.drop(() => dynamo.close(next)); // how to close this connection
   });
 
   beforeEach(function (next) {
     bffs = new BFFS(extend({
       log: sinon.spy(diagnostics('bffs-test')),
-      datastar: datastar,
+      db: dynamo,
       models: models,
       store: redis
     }, bffConfig));
@@ -224,17 +227,17 @@ describe('bffs', function () {
 
   it('can be initialized without `new`', function () {
     // eslint-disable-next-line new-cap
-    bffs = BFFS({ models: models, datastar: datastar, store: redis });
+    bffs = BFFS({ models: models, db: dynamo, store: redis });
   });
 
   it('will throw when initialized without the models', function () {
     function init() { bffs = new BFFS(); }
-    assume(init).throws(/Requires proper datastar instance and models/);
+    assume(init).throws(/Requires proper database instance and models/);
   });
 
-  it('will throw without a datastar instance', function () {
+  it('will throw without a database instance', function () {
     function init() { bffs = new BFFS({ models: models }); }
-    assume(init).throws(/Requires proper datastar instance and models/);
+    assume(init).throws(/Requires proper database instance and models/);
   });
 
   describe('#cdn', function () {

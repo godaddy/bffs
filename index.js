@@ -44,9 +44,9 @@ function BFFS(options) {
   this.store = store;
 
   //
-  // Everything else we store in Cassandra.
+  // Everything else we store in Database
   //
-  this.datastar = options.datastar;
+  this.db = options.db;
   this.models = options.models;
   this.log = options.log;
   this.prefix = prefix;
@@ -75,9 +75,9 @@ BFFS.prototype.init = function init(options) {
   options.env = options.env || Object.keys(options.cdn);
 
   if (!options.models
-      || !options.datastar
+      || !options.db
       || !['BuildFile', 'Build', 'BuildHead'].every((model) => !!options.models[model])) {
-    throw new Error('Requires proper datastar instance and models to be passed in, Build, BuildHead, BuildFile');
+    throw new Error('Requires proper database instance and models to be passed in, Build, BuildHead, BuildFile');
   }
 
   if (options.env && !Array.isArray(options.env)) {
@@ -88,7 +88,7 @@ BFFS.prototype.init = function init(options) {
     cdn: options.cdn,
     env: options.env,
     models: options.models,
-    datastar: options.datastar,
+    db: options.db,
     store: options.store,
     prefix: options.prefix || 'wrhs',
     limit: options.limit || 10,
@@ -451,7 +451,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  * them, if not we return an error so we do not modify the state of the
  * database
  *
- * @param {Array} files File Objects that correlate to the cassandra schema
+ * @param {Array} files File Objects that correlate to the database model schema
  * @param {Object} cdn CDNup instance
  * @param {Function} fn Completion callback
  * @returns {BFFS} The current instance
@@ -480,7 +480,7 @@ BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
  * In the future we could wrap this up in the DAL but I think its OK here for
  * now.
  *
- * @param {datastar.Model} Model The model that needs to be created.
+ * @param {WarehouseModel} Model The model that needs to be created.
  * @param {String} action Action to be called on things.
  * @param {Object} entity Data for the model.
  * @returns {function} Executable function to execute statements against the Model.
@@ -496,8 +496,8 @@ BFFS.prototype._collect = function _collect(Model, action, entity) {
     if (!callback && typeof statements === 'function') {
       callback = statements;
 
-      statements = new bff.datastar.StatementCollection(
-        bff.datastar.connection,
+      statements = new bff.db.StatementCollection(
+        bff.db.connection,
         'batch'
       ).consistency(Model.writeConsistency);
     }
@@ -532,8 +532,7 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
     .on('error', fn)
     .on('data', function incoming(data) {
     //
-    // This statement collection needs to be simpler would love ideas if it
-    // would make sense as a separate module or something in `datastar`.
+    // TODO against dynamoDB This statement collection needs to be simpler.
     //
       operations.push.apply(operations,
         data.fingerprints.map(function (print) {
@@ -743,16 +742,15 @@ BFFS.prototype.key = function key(spec, wot) {
       //
       // My thought here is to create a single delimiter since if we are using
       // this as the buildId and previousBuildId, we would have to parse it in
-      // order to actually fetch the build from the build table since we are using
-      // composite keys to be nice to cassandra
+      // order to actually fetch the build from the build database table.
       //
-      return [spec.name, spec.env, spec.version, spec.locale].join('!');
+      return [spec.name, spec.env, spec.version, spec.locale].join('!'); // should this change?
   }
 };
 
 /**
  * Strip irrelevant keys from build object before creating BuildHead
- * @param {Build} build Datastar build object
+ * @param {Build} build Database build object
  * @returns {Object} object literal version of build stripped of properties
  */
 BFFS.prototype._strip =  function strip(build) {
@@ -979,7 +977,7 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
 
   //
   // Create the proper URL paths for the artifacts we are storing in the CDN as the
-  // array we store in cassandra
+  // array we store in the database
   //
   result.artifacts = artifacts.length
     ? artifacts.map(normalize).filter(Boolean)
