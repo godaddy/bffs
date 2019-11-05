@@ -2,10 +2,8 @@ const crypto = require('crypto');
 
 // Generate random bucket name so to ensure tests preparation
 // are not restricted by an existing bucket.
-const s3 = {
-  Bucket: `wrhs-${ crypto.randomBytes(4).toString('hex') }`,
-  ACL: 'public-read'
-};
+const bucket = `wrhs-${ crypto.randomBytes(4).toString('hex') }`;
+const acl = 'public-read';
 
 const s3endpoint = 'http://localhost:4572';
 const pkgcloud = {
@@ -17,24 +15,23 @@ const pkgcloud = {
 };
 
 module.exports = {
-  prefix: s3.Bucket,
+  prefix: bucket,
   dynamodb: {
     endpoint: 'http://localhost:4569',
     region: 'us-east-1'
   },
-  s3,
   cdn: {
     test: {
-      check: `${ s3endpoint }/${ s3.Bucket }/`,
+      check: `${ s3endpoint }/${ bucket }/`,
       url: s3endpoint,
-      acl: s3.ACL,
-      pkgcloud
+      pkgcloud,
+      acl
     },
     dev: {
-      check: `${ s3endpoint }/${ s3.Bucket }/`,
+      check: `${ s3endpoint }/${ bucket }/`,
       url: s3endpoint,
-      acl: s3.ACL,
-      pkgcloud
+      pkgcloud,
+      acl
     }
   }
 };
