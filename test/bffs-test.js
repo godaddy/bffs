@@ -60,9 +60,8 @@ describe('bffs', function () { // eslint-disable-line
     }).catch(next);
   });
 
-  after(function (next) {
+  after(function () {
     redis.disconnect();
-    next();
   });
 
   beforeEach(function (next) {
