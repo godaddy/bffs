@@ -479,7 +479,7 @@ describe('bffs', function () { // eslint-disable-line
     }
   });
 
-  it('returns nothing for unknown seraches', function (next) {
+  it('returns nothing for unknown searches', function (next) {
     bffs.search({ name: 'a', version: 'foo', env: 'reasons' }, function (err, data) {
       assume(err).is.falsey();
       assume(data).is.falsey();
