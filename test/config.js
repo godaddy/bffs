@@ -14,10 +14,6 @@ const pkgcloud = {
   forcePathBucket: true
 };
 
-// Required to run tests on Travis...
-process.env.AWS_ACCESS_KEY_ID = 'foobar';
-process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
-
 module.exports = {
   prefix: bucket,
   dynamodb: {

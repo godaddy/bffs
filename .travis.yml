@@ -5,17 +5,15 @@ services:
   - redis
   - docker
 
-addons:
-  apt:
-    packages:
-      - docker-ce
-
 node_js:
   - "10"
   - "12"
 
+env:
+  - AWS_ACCESS_KEY_ID=foobar
+  - AWS_SECRET_ACCESS_KEY=foobar
+
 before_install:
-  - docker --version
   - docker pull localstack/localstack
   - docker run -d -p 127.0.0.1:4569:4569 -p 127.0.0.1:4572:4572 --name localstack localstack/localstack
 
