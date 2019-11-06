@@ -63,7 +63,6 @@ describe('bffs', function () { // eslint-disable-line
   after(function (next) {
     redis.disconnect();
     next();
-    // models.drop(() => dynamo.close(next)); // how to close this connection
   });
 
   beforeEach(function (next) {
