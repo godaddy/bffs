@@ -1,3 +1,4 @@
+/* eslint no-process-env: 0 */
 const crypto = require('crypto');
 
 // Generate random bucket name so to ensure tests preparation
@@ -13,6 +14,10 @@ const pkgcloud = {
   endpoint: s3endpoint,
   forcePathBucket: true
 };
+
+// Required to run tests on Travis??
+process.env.AWS_ACCESS_KEY_ID = 'foobar';
+process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
 
 module.exports = {
   prefix: bucket,
