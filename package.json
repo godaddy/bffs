@@ -7,7 +7,7 @@
     "test": "nyc --reporter=text --reporter=lcov mocha test/*-test.js",
     "test-debug": "mocha --debug-brk test/*-test.js",
     "watch": "mocha --watch test.js",
-    "lint": "eslint-godaddy -c .eslintrc ./*.js test/bffs-test.js",
+    "lint": "eslint-godaddy -c .eslintrc *.js \"test/**/*.js\"",
     "posttest": "npm run lint",
     "redis": "docker run -it -p 6379:6379 --rm redis",
     "localstack": "docker run -it -p 4569:4569 -p 4572:4572 --rm localstack/localstack"
