@@ -30,7 +30,6 @@
     "cdnup": "^4.0.0",
     "deep-extend": "^0.6.0",
     "diagnostics": "^1.0.1",
-    "has": "^1.0.1",
     "hyperquest": "~2.1.0",
     "list-stream": "^1.0.1",
     "lodash.flatten": "^4.1.0",

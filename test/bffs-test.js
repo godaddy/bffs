@@ -114,11 +114,7 @@ describe('bffs', function () { // eslint-disable-line
   }
 
   afterEach(function (next) {
-    bffs.unpublish(spec, function (error) {
-      if (error) console.error(error);
-
-      next();
-    });
+    bffs.unpublish(spec, next);
   });
 
   describe('#normalizeOpts', function () {
@@ -367,7 +363,7 @@ describe('bffs', function () { // eslint-disable-line
     var newSpec = extend({}, spec, { version: '1.0.0' });
     var opts = extend({}, fixture.files, { promote: false });
     var buildSpy = sinon.spy(bffs.models.Build, 'create');
-    var headSpy = sinon.spy(bffs.models.BuildHead, 'create');
+    var headSpy = sinon.spy(bffs.models.BuildHead, 'update');
 
     bffs.publish(newSpec, opts, function (err) {
       assume(err).is.falsey();
@@ -377,8 +373,8 @@ describe('bffs', function () { // eslint-disable-line
       bffs.promote(newSpec, (err) => {
         assume(err).is.falsey();
         assume(headSpy).is.called();
+
         bffs.head(newSpec, (err, head) => {
-          console.log('ENFORCED HEAD', head);
           assume(err).is.falsey();
           assume(head.version).equals(newSpec.version);
           bffs.unpublish(newSpec, next);
@@ -613,10 +609,16 @@ describe('bffs', function () { // eslint-disable-line
         assume(result.head.version).equals(assumed.spec.version);
         assume(result.head.env).equals(assumed.spec.env);
         assume(result.head.name).equals(assumed.spec.name);
+
+        // Previous build ID does not exist on the first published version.
+        if (result.head.previousBuildId && result.build.previousBuildId) {
+          assume(result.head.previousBuildId).equals(result.build.previousBuildId);
+        }
+
         assume(
-          omit(result.head.toJSON(), ['createDate', 'udpateDate'])
+          omit(result.head, ['createdAt', 'updatedAt', 'key', 'previousBuildId'])
         ).deep.equals(
-          omit(result.build.toJSON(), ['createDate', 'udpateDate', 'value'])
+          omit(result.build, ['createdAt', 'updatedAt', 'key', 'previousBuildId'])
         );
 
         async.each(result.head.artifacts, (arti, next) => {

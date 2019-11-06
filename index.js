@@ -4,7 +4,7 @@ var hyperquest = require('hyperquest');
 var extend = require('deep-extend');
 var flatten = require('lodash.flatten');
 var ls = require('list-stream');
-var has = require('has');
+var omit = require('lodash.omit');
 var once = require('one-time');
 var async = require('async');
 var parallel = require('parallel-transform');
@@ -507,7 +507,6 @@ BFFS.prototype.promote = function promote(spec, callback) {
       // so we dont break the linked list strategy
       //
       this.head({ locale, ...spec }, (err, head) => {
-        console.log('FOUND HEAD', head);
         if (err) return next(err);
         //
         // Detect if this should actually be a rollback and set the proper
@@ -529,13 +528,11 @@ BFFS.prototype.promote = function promote(spec, callback) {
       });
     }))
     .on('error', fn)
-    .on('data', (data) => {
-      operations.push((next) => {
-        async.parallel([
-          (cb) => BuildHead.create(this._strip(data), cb),
-          changed && ((cb) => Build.update(data, cb))
-        ].filter(Boolean), next);
-      });
+    .on('data', data => {
+      operations.push(next => async.series([
+        BuildHead.update.bind(BuildHead, this._strip(data)),
+        changed && Build.update.bind(Build, data)
+      ].filter(Boolean), next));
     })
     .on('end', () => {
       if (!operations.length) return callback(new Error(`Builds not found for ${spec.name}, ${spec.env}, ${spec.version}`));
@@ -622,7 +619,7 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
       //    itself so it gets the updated rollbackBuildIds
       //
       next(null, [
-        BuildHead.create.bind(BuildHead, this._strip(build)),
+        BuildHead.update.bind(BuildHead, this._strip(build)),
         Build.update.bind(Build, build)
       ]);
     }))
@@ -631,7 +628,7 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
     })
     .on('end', () => {
       async.eachLimit(operations, this.limit, (ops, next) => {
-        async.waterfall(ops, next);
+        async.series(ops, next);
       }, callback);
     });
 };
@@ -668,22 +665,26 @@ BFFS.prototype.key = function key(spec, wot) {
 };
 
 /**
- * Strip irrelevant keys from build object before creating BuildHead
+ * Strip irrelevant keys from build object before creating BuildHead. Also remove
+ * properties that might prevent databases from upserting the record.
+ *
  * @param {Build} build Database build object
  * @returns {Object} object literal version of build stripped of properties
  */
-BFFS.prototype._strip =  function strip(build) {
-  var b = extend({}, build);
-  delete b.value;
+BFFS.prototype._strip = function strip(build) {
+  var b = omit(build, [
+    'createdAt',
+    'key'
+  ]);
 
   //
   // We remove the previousBuildId when we do a `create` on a falsey value as
   // it causes validation to fail as it is not a string.
   //
-  if (has(b, 'previousBuildId')
-      && (b.previousBuildId === null
-          || typeof b.previousBuildId === 'undefined'))
+  if ('previousBuildId' in b && typeof b.previousBuildId !== 'string') {
     delete b.previousBuildId;
+  }
+
   return b;
 };
 
