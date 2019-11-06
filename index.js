@@ -676,12 +676,9 @@ BFFS.prototype.key = function key(spec, wot) {
  * @returns {Object} object literal version of build stripped of properties
  */
 BFFS.prototype._strip =  function strip(build) {
-  var b = build.toJSON();
+  var b = extend({}, build);
   delete b.value;
-  //
-  // Also remove createDate because null is not valid and it should be generated
-  //
-  delete b.createDate;
+
   //
   // We remove the previousBuildId when we do a `create` on a falsey value as
   // it causes validation to fail as it is not a string.
