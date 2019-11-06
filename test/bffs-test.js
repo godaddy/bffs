@@ -62,6 +62,7 @@ describe('bffs', function () { // eslint-disable-line
 
   after(function (next) {
     redis.disconnect();
+    next();
     // models.drop(() => dynamo.close(next)); // how to close this connection
   });
 
@@ -113,7 +114,11 @@ describe('bffs', function () { // eslint-disable-line
   }
 
   afterEach(function (next) {
-    bffs.unpublish(spec, next);
+    bffs.unpublish(spec, function (error) {
+      console.error(error);
+
+      next();
+    });
   });
 
   describe('#normalizeOpts', function () {
@@ -445,7 +450,7 @@ describe('bffs', function () { // eslint-disable-line
     });
   });
 
-  it('properly sets the `previousBuildId` on a subsequent publish of the same package', function (done) {
+  it.only('properly sets the `previousBuildId` on a subsequent publish of the same package', function (done) {
     var newSpec = extend({}, spec, { version: '0.0.2' });
     var newFiles = files;
 
@@ -642,6 +647,13 @@ describe('bffs', function () { // eslint-disable-line
     var options2 = generatePublishStub(spec2, names);
 
     before(function (done) {
+      bffs = new BFFS(extend({
+        log: sinon.spy(diagnostics('bffs-test')),
+        db: dynamo,
+        models: models,
+        store: redis
+      }, config));
+
       fileMap = options.files.reduce((acc, file) => {
         acc[bffs.key(file, 'file')] = file;
         return acc;

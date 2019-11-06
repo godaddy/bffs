@@ -165,7 +165,7 @@ BFFS.prototype.meta = function meta(spec, fn) {
       name: spec.name,
       version: spec.version,
       envs: builds.reduce(function reduce(memo, model) {
-        var build = model.toJSON();
+        var build = extend({}, model);
         memo[build.env] = build;
 
         delete build.version;
@@ -465,7 +465,7 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
   var BuildFile = this.models.BuildFile;
   var BuildHead = this.models.BuildHead;
   var Build = this.models.Build;
-  var fn  = once(callback);
+  var fn = once(callback);
   var data;
 
   //
@@ -475,7 +475,11 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
     .on('error', fn)
     .once('data', d => { data = d; })
     .once('end', () => {
-      const operations = data.fingerprints.map(fingerprint => BuildFile.remove.bind(BuildFile, { fingerprint }));
+      if (!data || !data.fingerprints) return fn(new Error('No unpublishable builds found for given spec'));
+
+      const operations = data.fingerprints.map(fingerprint => {
+        return BuildFile.remove.bind(BuildFile, { fingerprint });
+      });
 
       operations.push(
         Build.remove.bind(Build, spec),
