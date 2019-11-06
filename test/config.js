@@ -1,9 +1,8 @@
 /* eslint no-process-env: 0 */
-const crypto = require('crypto');
 
 // Generate random bucket name so to ensure tests preparation
 // are not restricted by an existing bucket.
-const bucket = `wrhs-${ crypto.randomBytes(4).toString('hex') }`;
+const bucket = 'wrhs-test';
 const acl = 'public-read';
 
 const s3endpoint = 'http://localhost:4572';
