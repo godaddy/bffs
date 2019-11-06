@@ -465,26 +465,21 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
   var BuildHead = this.models.BuildHead;
   var Build = this.models.Build;
   var fn = once(callback);
-  var data;
+  var operations = [];
 
   //
   // Grab all the builds for the given spec.
   //
   this.stream(spec)
     .on('error', fn)
-    .once('data', d => { data = d; })
-    .once('end', () => {
-      if (!data || !data.fingerprints) return fn(new Error('No unpublishable builds found for given spec'));
-
-      const operations = data.fingerprints.map(fingerprint => {
-        return BuildFile.remove.bind(BuildFile, { fingerprint });
-      });
-
-      operations.push(
+    .on('data', data => {
+      operations = operations.concat(
+        data.fingerprints.map(fingerprint => BuildFile.remove.bind(BuildFile, { fingerprint })),
         Build.remove.bind(Build, spec),
-        BuildHead.remove.bind(BuildHead, spec)
+        BuildHead.remove.bind(BuildHead, spec),
       );
-
+    })
+    .on('end', () => {
       async.series(operations.map(op => async.retry(this.retry, op)), fn);
     });
 
@@ -512,6 +507,7 @@ BFFS.prototype.promote = function promote(spec, callback) {
       // so we dont break the linked list strategy
       //
       this.head({ locale, ...spec }, (err, head) => {
+        console.log('FOUND HEAD', head);
         if (err) return next(err);
         //
         // Detect if this should actually be a rollback and set the proper

@@ -378,6 +378,7 @@ describe('bffs', function () { // eslint-disable-line
         assume(err).is.falsey();
         assume(headSpy).is.called();
         bffs.head(newSpec, (err, head) => {
+          console.log('ENFORCED HEAD', head);
           assume(err).is.falsey();
           assume(head.version).equals(newSpec.version);
           bffs.unpublish(newSpec, next);
