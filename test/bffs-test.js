@@ -44,6 +44,8 @@ describe('bffs', function () { // eslint-disable-line
   // tests, only single bucket needs to be prepared.
   //
   before(function (next) {
+    this.timeout(60000);
+
     const dynamoDriver = new DynamoDB(config.dynamodb);
 
     dynamo.dynamoDriver(dynamoDriver);
@@ -443,7 +445,7 @@ describe('bffs', function () { // eslint-disable-line
     });
   });
 
-  it.only('properly sets the `previousBuildId` on a subsequent publish of the same package', function (done) {
+  it('properly sets the `previousBuildId` on a subsequent publish of the same package', function (done) {
     var newSpec = extend({}, spec, { version: '0.0.2' });
     var newFiles = files;
 
