@@ -48,7 +48,7 @@ describe('bffs', function () { // eslint-disable-line
 
     dynamo.dynamoDriver(dynamoDriver);
     models = wrhs(dynamo);
-    redis = new Redis().on('error', console.error);
+    redis = new Redis().on('error', console.error); // eslint-disable-line no-console
 
     new AwsLiveness().waitForServices({
       clients: [dynamoDriver],
@@ -606,7 +606,11 @@ describe('bffs', function () { // eslint-disable-line
         assume(result.head.version).equals(assumed.spec.version);
         assume(result.head.env).equals(assumed.spec.env);
         assume(result.head.name).equals(assumed.spec.name);
-        assume(omit(result.head.toJSON(), ['createDate', 'udpateDate'])).deep.equals(omit(result.build.toJSON(), ['createDate', 'udpateDate', 'value']));
+        assume(
+          omit(result.head.toJSON(), ['createDate', 'udpateDate'])
+        ).deep.equals(
+          omit(result.build.toJSON(), ['createDate', 'udpateDate', 'value'])
+        );
 
         async.each(result.head.artifacts, (arti, next) => {
           var fullUrl = url.resolve(result.head.cdnUrl, arti);

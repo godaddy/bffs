@@ -18,15 +18,9 @@ var isRedis = /^~~active/;
 /**
  * Build Files Finder, BFFS <3
  *
- * Options:
- *
- * - store: key/value database configuration.
- * - env: Allowed environment variables.
- * - cdn: Configuration for the CDN.
- *
  * @constructor
  * @param {Object} options Configuration.
- * @api private
+ * @public
  */
 function BFFS(options) {
   if (!this) return new BFFS(options);
@@ -54,6 +48,7 @@ function BFFS(options) {
 
   this.cdns = this.cdnify(cdn);
   this.limit = options.limit;
+  this.retry = options.retry;
 
   //
   // Always fetch by locale so we default our locale property if it does not
@@ -92,6 +87,7 @@ BFFS.prototype.init = function init(options) {
     store: options.store,
     prefix: options.prefix || 'wrhs',
     limit: options.limit || 10,
+    retry: options.retry || 3,
     log: typeof options.log === 'function' ? options.log : diagnostics('bffs')
   };
 };
@@ -367,7 +363,6 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
       var operations = [Build, promote && BuildHead].filter(Boolean).map(function (model) {
         var entity = bff.normalize(extend({
           fingerprints: fingerprints,
-          createDate: new Date(),
           recommended: recommended,
           artifacts: artifacts,
           buildId: bff.key(payload),
@@ -384,24 +379,16 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
           entity.previousBuildId = head.buildId;
         }
 
-        return bff._collect(model, 'create', entity);
+        return model.create.bind(model, entity);
       });
 
       //
       // Create the files and add to the batch.
       //
-      var ops = fingerprints.map((print) => {
+      operations = operations.concat(fingerprints.map((print) => {
         var gz = path.extname(print) === '.gz';
         var key = gz ? print.slice(0, -3) : print;
         var file = fileMap[key];
-
-        //
-        // return a function that can be used to build a create statement with
-        // the given entity
-        //
-        function collect(entity) {
-          return bff._collect(BuildFile, 'create', entity);
-        }
 
         //
         // Compile the entity based on parameters
@@ -418,16 +405,8 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
           return entity;
         }
 
-        return collect(compileEntity());
-      });
-
-      operations.push.apply(operations, ops);
-      //
-      // Final execution step
-      //
-      operations.push(function execute(statements, callback) {
-        statements.execute(callback);
-      });
+        return BuildFile.create.bind(BuildFile, compileEntity());
+      }));
 
       //
       // Ensure everything exists in the CDN before we commit to the database
@@ -438,7 +417,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         //
         // Let it ride. Insert all the things into the database!
         //
-        async.waterfall(operations, fn);
+        async.series(operations.map(op => async.retry(bff.retry, op)), fn);
       });
     });
   });
@@ -477,40 +456,6 @@ BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
 };
 
 /**
- * Build the statement collection for the various models we are updating here
- * In the future we could wrap this up in the DAL but I think its OK here for
- * now.
- *
- * @param {WarehouseModel} Model The model that needs to be created.
- * @param {String} action Action to be called on things.
- * @param {Object} entity Data for the model.
- * @returns {function} Executable function to execute statements against the Model.
- * @api private
- */
-BFFS.prototype._collect = function _collect(Model, action, entity) {
-  var bff = this;
-
-  return function collection(statements, callback) {
-    //
-    // Handle initial case. Passing in a statement collection
-    //
-    if (!callback && typeof statements === 'function') {
-      callback = statements;
-
-      statements = new bff.db.StatementCollection(
-        bff.db.connection,
-        'batch'
-      ).consistency(Model.writeConsistency);
-    }
-
-    Model[action]({
-      statements: statements,
-      entity: entity
-    }, callback);
-  };
-};
-
-/**
  * Remove a build from the registry.
  *
  * @param {Object} spec Build specification.
@@ -523,42 +468,26 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
   var BuildHead = this.models.BuildHead;
   var Build = this.models.Build;
   var fn  = once(callback);
-  var bff = this;
-  var operations = [];
+  var data;
 
   //
   // Grab all the builds for the given spec.
   //
   this.stream(spec)
     .on('error', fn)
-    .on('data', function incoming(data) {
-    //
-    // TODO against dynamoDB This statement collection needs to be simpler.
-    //
-      operations.push.apply(operations,
-        data.fingerprints.map(function (print) {
-          return bff._collect(BuildFile, 'remove', {
-            fingerprint: print
-          });
-        })
+    .once('data', d => { data = d; })
+    .once('end', () => {
+      const operations = data.fingerprints.map(fingerprint => BuildFile.remove.bind(BuildFile, { fingerprint }));
+
+      operations.push(
+        Build.remove.bind(Build, spec),
+        BuildHead.remove.bind(BuildHead, spec)
       );
 
-      operations.push(bff._collect(Build, 'remove', spec));
-      operations.push(bff._collect(BuildHead, 'remove', spec));
-    })
-    .on('end', function end() {
-      operations.push(function execute(statements, next) {
-        if (!next && typeof statements === 'function') {
-          return process.nextTick(statements);
-        }
-
-        statements.execute(next);
-      });
-
-      async.waterfall(operations, fn);
+      async.series(operations.map(op => async.retry(this.retry, op)), fn);
     });
 
-  return bff;
+  return this;
 };
 /**
  * Execute a promote operation on the given version, fetching previous version
@@ -627,7 +556,6 @@ BFFS.prototype.promote = function promote(spec, callback) {
 BFFS.prototype.rollback = function rollback(spec, version, callback) {
   var BuildHead = this.models.BuildHead;
   var Build = this.models.Build;
-  var bff = this;
 
   if (typeof version === 'function' && !callback) {
     callback = version;
@@ -692,21 +620,14 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
     }))
     .on('error', fn)
     .pipe(parallel(this.limit, (build, next) => {
-      const miniBatch = [];
       //
       // 6. Replace the build HEAD to what we are rolling back to and the build
       //    itself so it gets the updated rollbackBuildIds
       //
-      miniBatch.push(bff._collect(BuildHead, 'create', bff._strip(build)));
-      miniBatch.push(bff._collect(Build, 'update', build));
-      miniBatch.push(function execute(statements, next) {
-        if (!next && typeof statements === 'function') {
-          return process.nextTick(statements);
-        }
-
-        statements.execute(next);
-      });
-      next(null, miniBatch);
+      next(null, [
+        BuildHead.create.bind(BuildHead, this._strip(build)),
+        Build.update.bind(Build, build)
+      ]);
     }))
     .on('data', (data) => {
       operations.push(data);
