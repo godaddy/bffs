@@ -123,11 +123,9 @@ BFFS.prototype.cdnify = function cdnify(options) {
  * @api public
  */
 BFFS.prototype.build = function build(fingerprint, gz, fn) {
-  var key = fingerprint;
+  if (gz) fingerprint += '.gz';
 
-  if (gz) key += '.gz';
-
-  this.models.BuildFile.get(key, fn);
+  this.models.BuildFile.get({ fingerprint }, fn);
 
   return this;
 };
@@ -327,6 +325,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
   // Fetch the current head build.
   //
   this.head(spec, function gethead(err, head) {
+    console.log('CURRENT HEAD IS', head);
     if (err) return fn(err);
     var cdn = bff.cdns[env];
     //
@@ -374,7 +373,6 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         // locale in the specific env to be the previousBuildId of the entity
         // we are about to publish
         //
-
         if (head && head.buildId) {
           entity.previousBuildId = head.buildId;
         }
@@ -666,7 +664,7 @@ BFFS.prototype.key = function key(spec, wot) {
       // this as the buildId and previousBuildId, we would have to parse it in
       // order to actually fetch the build from the build database table.
       //
-      return [spec.name, spec.env, spec.version, spec.locale].join('!'); // should this change?
+      return [spec.name, spec.env, spec.version, spec.locale].join('!');
   }
 };
 
