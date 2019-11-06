@@ -414,7 +414,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         //
         // Let it ride. Insert all the things into the database!
         //
-        async.series(operations, fn);
+        async.series(operations.map(operation => async.retry(bff.retry, operation)), fn);
       });
     });
   });
@@ -480,7 +480,7 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
       );
     })
     .on('end', () => {
-      async.series(operations.map(op => async.retry(this.retry, op)), fn);
+      async.series(operations.map(operation => async.retry(this.retry, operation)), fn);
     });
 
   return this;
@@ -532,7 +532,7 @@ BFFS.prototype.promote = function promote(spec, callback) {
       operations.push(next => async.series([
         BuildHead.update.bind(BuildHead, this._strip(data)),
         changed && Build.update.bind(Build, data)
-      ].filter(Boolean), next));
+      ].filter(Boolean).map(operation => async.retry(this.retry, operation)), next));
     })
     .on('end', () => {
       if (!operations.length) return callback(new Error(`Builds not found for ${spec.name}, ${spec.env}, ${spec.version}`));
@@ -628,7 +628,7 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
     })
     .on('end', () => {
       async.eachLimit(operations, this.limit, (ops, next) => {
-        async.series(ops, next);
+        async.series(ops.map(o => async.retry(this.retry, o)), next);
       }, callback);
     });
 };
