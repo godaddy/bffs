@@ -115,7 +115,7 @@ describe('bffs', function () { // eslint-disable-line
 
   afterEach(function (next) {
     bffs.unpublish(spec, function (error) {
-      console.error(error);
+      if (error) console.error(error);
 
       next();
     });
@@ -450,7 +450,7 @@ describe('bffs', function () { // eslint-disable-line
     });
   });
 
-  it.only('properly sets the `previousBuildId` on a subsequent publish of the same package', function (done) {
+  it('properly sets the `previousBuildId` on a subsequent publish of the same package', function (done) {
     var newSpec = extend({}, spec, { version: '0.0.2' });
     var newFiles = files;
 
@@ -458,7 +458,6 @@ describe('bffs', function () { // eslint-disable-line
       extend({}, file, { fingerprint: file.fingerprint + '87' }));
 
     var prevBuildId = bffs.key(spec);
-    console.log('newSPEC', newSpec);
     bffs.publish(newSpec, newFiles, err => {
       if (err) return done(err);
 

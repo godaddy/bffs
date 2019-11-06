@@ -325,7 +325,6 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
   // Fetch the current head build.
   //
   this.head(spec, function gethead(err, head) {
-    console.log('CURRENT HEAD IS', head);
     if (err) return fn(err);
     var cdn = bff.cdns[env];
     //
@@ -415,7 +414,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         //
         // Let it ride. Insert all the things into the database!
         //
-        async.series(operations.map(op => async.retry(bff.retry, op)), fn);
+        async.series(operations, fn);
       });
     });
   });
