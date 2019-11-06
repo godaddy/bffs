@@ -10,8 +10,7 @@ node_js:
   - "12"
 
 env:
-  - AWS_ACCESS_KEY_ID=foobar
-  - AWS_SECRET_ACCESS_KEY=foobar
+  - AWS_ACCESS_KEY_ID=foobar AWS_SECRET_ACCESS_KEY=foobar
 
 before_install:
   - docker pull localstack/localstack
