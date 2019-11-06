@@ -7,7 +7,7 @@ node_js:
 
 before_install:
 - docker pull localstack/localstack
-- docker run -d --name localstack -p 4569:4569 --rm localstack/localstack
+- docker run -d --name localstack -p 4569:4569 -p 4572:4572 --rm localstack/localstack
 
 install: npm install
 services:
