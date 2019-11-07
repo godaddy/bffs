@@ -6,7 +6,7 @@
 /* eslint no-redeclare: 0 */
 
 var wrhs = require('warehouse-models');
-var { DynamoDB } = require('aws-sdk');
+var { DynamoDB, S3 } = require('aws-sdk');
 var dynamo = require('dynamodb-x');
 var AwsLiveness = require('aws-liveness');
 var fingerprinting = require('fingerprinting');
@@ -47,13 +47,14 @@ describe('bffs', function () { // eslint-disable-line
     this.timeout(60000);
 
     const dynamoDriver = new DynamoDB(config.dynamodb);
+    const s3 = new S3(config.s3);
 
     dynamo.dynamoDriver(dynamoDriver);
     models = wrhs(dynamo);
     redis = new Redis().on('error', console.error); // eslint-disable-line no-console
 
     new AwsLiveness().waitForServices({
-      clients: [dynamoDriver],
+      clients: [dynamoDriver, s3],
       waitSeconds: 60
     }).then(function () {
       models.ensure(next);

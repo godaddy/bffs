@@ -20,6 +20,9 @@ module.exports = {
     endpoint: 'http://localhost:4569',
     region: 'us-east-1'
   },
+  s3: {
+    endpoint: s3endpoint
+  },
   cdn: {
     test: {
       check: `${ s3endpoint }/${ bucket }/`,
