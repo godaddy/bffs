@@ -7,8 +7,10 @@
     "test": "nyc --reporter=text --reporter=lcov mocha test/*-test.js",
     "test-debug": "mocha --debug-brk test/*-test.js",
     "watch": "mocha --watch test.js",
-    "eslint": "eslint-godaddy -c .eslintrc ./*.js test/bffs-test.js",
-    "posttest": "npm run eslint"
+    "lint": "eslint-godaddy -c .eslintrc *.js \"test/**/*.js\"",
+    "posttest": "npm run lint",
+    "redis": "docker run -it -p 6379:6379 --rm redis",
+    "localstack": "docker run -it -p 4569:4569 -p 4572:4572 --rm localstack/localstack"
   },
   "repository": {
     "type": "git",
@@ -28,7 +30,6 @@
     "cdnup": "^4.0.0",
     "deep-extend": "^0.6.0",
     "diagnostics": "^1.0.1",
-    "has": "^1.0.1",
     "hyperquest": "~2.1.0",
     "list-stream": "^1.0.1",
     "lodash.flatten": "^4.1.0",
@@ -39,8 +40,10 @@
   "devDependencies": {
     "assume": "^2.2.0",
     "assume-sinon": "^1.0.1",
+    "aws-liveness": "^1.1.0",
+    "aws-sdk": "^2.563.0",
     "babel-eslint": "^10.0.1",
-    "datastar": "^1.7.0",
+    "dynamodb-x": "^1.2.3",
     "eslint": "^5.16.0",
     "eslint-config-godaddy": "^3.0.0",
     "eslint-plugin-json": "^1.4.0",
@@ -53,6 +56,6 @@
     "request": "^2.88.0",
     "sinon": "^7.3.2",
     "uuid": "^2.0.1",
-    "warehouse-models": "^5.9.1"
+    "warehouse-models": "^6.0.1"
   }
 }

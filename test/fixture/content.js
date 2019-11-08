@@ -3,4 +3,4 @@ module.exports = Thing;
 
 function Thing() {}
 
-Thing.prototype.what = function () {}
+Thing.prototype.what = function () {};

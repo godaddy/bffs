@@ -6,32 +6,31 @@
 /* eslint no-redeclare: 0 */
 
 var wrhs = require('warehouse-models');
+var { DynamoDB, S3 } = require('aws-sdk');
+var dynamo = require('dynamodb-x');
+var AwsLiveness = require('aws-liveness');
 var fingerprinting = require('fingerprinting');
 var path = require('path');
 var url = require('url');
 var extend = require('deep-extend');
 var fixture = require('./fixture');
-var config = require('../config');
-var Redis  = require('ioredis');
+var Redis = require('ioredis');
 var uuid = require('uuid');
 var omit = require('lodash.omit');
 var request = require('request');
-var Datastar = require('datastar');
 var assume = require('assume');
 var async = require('async');
 var sinon = require('sinon');
 var diagnostics = require('diagnostics');
 var BFFS = require('..');
 var fs = require('fs');
-var bffConfig = require('./config');
+var config = require('./config');
 
 assume.use(require('assume-sinon'));
 
-describe('bffs', function () {
-
+describe('bffs', function () { // eslint-disable-line
   this.timeout(20000);
 
-  var datastar;
   var models;
   var redis;
   var files;
@@ -40,32 +39,39 @@ describe('bffs', function () {
   var bffs;
 
   //
-  // Setup datastar and the models before anything else
+  // Setup database and the models before anything else
+  // S3 configuration for both environments is identical for
+  // tests, only single bucket needs to be prepared.
   //
   before(function (next) {
-    datastar = new Datastar(config);
-    models = wrhs(datastar);
-    redis = new Redis()
-      .on('error', err => console.error(err));
+    this.timeout(60000);
 
-    datastar.connect(function (err) {
-      if (err) return next(err);
+    const dynamoDriver = new DynamoDB(config.dynamodb);
+    const s3 = new S3(config.s3);
+
+    dynamo.dynamoDriver(dynamoDriver);
+    models = wrhs(dynamo);
+    redis = new Redis().on('error', console.error); // eslint-disable-line no-console
+
+    new AwsLiveness().waitForServices({
+      clients: [dynamoDriver, s3],
+      waitSeconds: 60
+    }).then(function () {
       models.ensure(next);
-    });
+    }).catch(next);
   });
 
-  after(function (next) {
+  after(function () {
     redis.disconnect();
-    models.drop(() => datastar.close(next));
   });
 
   beforeEach(function (next) {
     bffs = new BFFS(extend({
       log: sinon.spy(diagnostics('bffs-test')),
-      datastar: datastar,
+      db: dynamo,
       models: models,
       store: redis
-    }, bffConfig));
+    }, config));
 
     data = fixture.files.files[0];
     files = fixture.files;
@@ -224,17 +230,17 @@ describe('bffs', function () {
 
   it('can be initialized without `new`', function () {
     // eslint-disable-next-line new-cap
-    bffs = BFFS({ models: models, datastar: datastar, store: redis });
+    bffs = BFFS({ models: models, db: dynamo, store: redis });
   });
 
   it('will throw when initialized without the models', function () {
     function init() { bffs = new BFFS(); }
-    assume(init).throws(/Requires proper datastar instance and models/);
+    assume(init).throws(/Requires proper database instance and models/);
   });
 
-  it('will throw without a datastar instance', function () {
+  it('will throw without a database instance', function () {
     function init() { bffs = new BFFS({ models: models }); }
-    assume(init).throws(/Requires proper datastar instance and models/);
+    assume(init).throws(/Requires proper database instance and models/);
   });
 
   describe('#cdn', function () {
@@ -356,7 +362,7 @@ describe('bffs', function () {
     var newSpec = extend({}, spec, { version: '1.0.0' });
     var opts = extend({}, fixture.files, { promote: false });
     var buildSpy = sinon.spy(bffs.models.Build, 'create');
-    var headSpy = sinon.spy(bffs.models.BuildHead, 'create');
+    var headSpy = sinon.spy(bffs.models.BuildHead, 'update');
 
     bffs.publish(newSpec, opts, function (err) {
       assume(err).is.falsey();
@@ -366,6 +372,7 @@ describe('bffs', function () {
       bffs.promote(newSpec, (err) => {
         assume(err).is.falsey();
         assume(headSpy).is.called();
+
         bffs.head(newSpec, (err, head) => {
           assume(err).is.falsey();
           assume(head.version).equals(newSpec.version);
@@ -447,7 +454,6 @@ describe('bffs', function () {
       extend({}, file, { fingerprint: file.fingerprint + '87' }));
 
     var prevBuildId = bffs.key(spec);
-
     bffs.publish(newSpec, newFiles, err => {
       if (err) return done(err);
 
@@ -473,7 +479,7 @@ describe('bffs', function () {
     }
   });
 
-  it('returns nothing for unknown seraches', function (next) {
+  it('returns nothing for unknown searches', function (next) {
     bffs.search({ name: 'a', version: 'foo', env: 'reasons' }, function (err, data) {
       assume(err).is.falsey();
       assume(data).is.falsey();
@@ -602,7 +608,17 @@ describe('bffs', function () {
         assume(result.head.version).equals(assumed.spec.version);
         assume(result.head.env).equals(assumed.spec.env);
         assume(result.head.name).equals(assumed.spec.name);
-        assume(omit(result.head.toJSON(), ['createDate', 'udpateDate'])).deep.equals(omit(result.build.toJSON(), ['createDate', 'udpateDate', 'value']));
+
+        // Previous build ID does not exist on the first published version.
+        if (result.head.previousBuildId && result.build.previousBuildId) {
+          assume(result.head.previousBuildId).equals(result.build.previousBuildId);
+        }
+
+        assume(
+          omit(result.head, ['createdAt', 'updatedAt', 'key', 'previousBuildId'])
+        ).deep.equals(
+          omit(result.build, ['createdAt', 'updatedAt', 'key', 'previousBuildId'])
+        );
 
         async.each(result.head.artifacts, (arti, next) => {
           var fullUrl = url.resolve(result.head.cdnUrl, arti);
@@ -632,6 +648,13 @@ describe('bffs', function () {
     var options2 = generatePublishStub(spec2, names);
 
     before(function (done) {
+      bffs = new BFFS(extend({
+        log: sinon.spy(diagnostics('bffs-test')),
+        db: dynamo,
+        models: models,
+        store: redis
+      }, config));
+
       fileMap = options.files.reduce((acc, file) => {
         acc[bffs.key(file, 'file')] = file;
         return acc;

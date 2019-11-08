@@ -252,18 +252,27 @@ bffs.wipe({
 
 ## Tests
 
-A key/value database (i.e Redis or similar) should be running local. In
-addition, file uploads require environment variables to be set in the terminal
-session running the tests. The tests use Amazon S3 to perform file uploads.
+A key/value database (i.e Redis or similar) should be running local.
 
 ```sh
-WRHS_TEST_AWS_KEY_ID=                       // API key id
-WRHS_TEST_AWS_KEY=                          // API key
-WRHS_TEST_AWS_PREFIX=                       // S3 bucket name
-WRHS_TEST_AWS_TEST_URL=                     // full path to S3 bucket in test
-WRHS_TEST_AWS_DEV_URL=                      // full path to S3 bucket in dev
+docker pull redis:latest
+npm run redis
+```
 
+Also run an AWS local cloud stack, pull `latest` [localstack].
+This requires `docker` [to be setup][docker].
+
+```sh
+docker pull localstack/localstack:latest
+npm run localstack
+```
+
+Run tests in a separate terminal.
+
+```sh
 npm test
 ```
 
 [warehouse.ai]: https://github.com/godaddy/warehouse.ai
+[localstack]: https://github.com/localstack/localstack
+[docker]: https://docs.docker.com/get-started/

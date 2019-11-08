@@ -4,7 +4,7 @@ var hyperquest = require('hyperquest');
 var extend = require('deep-extend');
 var flatten = require('lodash.flatten');
 var ls = require('list-stream');
-var has = require('has');
+var omit = require('lodash.omit');
 var once = require('one-time');
 var async = require('async');
 var parallel = require('parallel-transform');
@@ -18,15 +18,9 @@ var isRedis = /^~~active/;
 /**
  * Build Files Finder, BFFS <3
  *
- * Options:
- *
- * - store: key/value database configuration.
- * - env: Allowed environment variables.
- * - cdn: Configuration for the CDN.
- *
  * @constructor
  * @param {Object} options Configuration.
- * @api private
+ * @public
  */
 function BFFS(options) {
   if (!this) return new BFFS(options);
@@ -44,9 +38,9 @@ function BFFS(options) {
   this.store = store;
 
   //
-  // Everything else we store in Cassandra.
+  // Everything else we store in Database
   //
-  this.datastar = options.datastar;
+  this.db = options.db;
   this.models = options.models;
   this.log = options.log;
   this.prefix = prefix;
@@ -54,6 +48,7 @@ function BFFS(options) {
 
   this.cdns = this.cdnify(cdn);
   this.limit = options.limit;
+  this.retry = options.retry;
 
   //
   // Always fetch by locale so we default our locale property if it does not
@@ -75,9 +70,9 @@ BFFS.prototype.init = function init(options) {
   options.env = options.env || Object.keys(options.cdn);
 
   if (!options.models
-      || !options.datastar
+      || !options.db
       || !['BuildFile', 'Build', 'BuildHead'].every((model) => !!options.models[model])) {
-    throw new Error('Requires proper datastar instance and models to be passed in, Build, BuildHead, BuildFile');
+    throw new Error('Requires proper database instance and models to be passed in, Build, BuildHead, BuildFile');
   }
 
   if (options.env && !Array.isArray(options.env)) {
@@ -88,10 +83,11 @@ BFFS.prototype.init = function init(options) {
     cdn: options.cdn,
     env: options.env,
     models: options.models,
-    datastar: options.datastar,
+    db: options.db,
     store: options.store,
     prefix: options.prefix || 'wrhs',
     limit: options.limit || 10,
+    retry: options.retry || 3,
     log: typeof options.log === 'function' ? options.log : diagnostics('bffs')
   };
 };
@@ -127,11 +123,9 @@ BFFS.prototype.cdnify = function cdnify(options) {
  * @api public
  */
 BFFS.prototype.build = function build(fingerprint, gz, fn) {
-  var key = fingerprint;
+  if (gz) fingerprint += '.gz';
 
-  if (gz) key += '.gz';
-
-  this.models.BuildFile.get(key, fn);
+  this.models.BuildFile.get({ fingerprint }, fn);
 
   return this;
 };
@@ -171,7 +165,7 @@ BFFS.prototype.meta = function meta(spec, fn) {
       name: spec.name,
       version: spec.version,
       envs: builds.reduce(function reduce(memo, model) {
-        var build = model.toJSON();
+        var build = extend({}, model);
         memo[build.env] = build;
 
         delete build.version;
@@ -367,7 +361,6 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
       var operations = [Build, promote && BuildHead].filter(Boolean).map(function (model) {
         var entity = bff.normalize(extend({
           fingerprints: fingerprints,
-          createDate: new Date(),
           recommended: recommended,
           artifacts: artifacts,
           buildId: bff.key(payload),
@@ -379,29 +372,20 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         // locale in the specific env to be the previousBuildId of the entity
         // we are about to publish
         //
-
         if (head && head.buildId) {
           entity.previousBuildId = head.buildId;
         }
 
-        return bff._collect(model, 'create', entity);
+        return model.create.bind(model, entity);
       });
 
       //
       // Create the files and add to the batch.
       //
-      var ops = fingerprints.map((print) => {
+      operations = operations.concat(fingerprints.map((print) => {
         var gz = path.extname(print) === '.gz';
         var key = gz ? print.slice(0, -3) : print;
         var file = fileMap[key];
-
-        //
-        // return a function that can be used to build a create statement with
-        // the given entity
-        //
-        function collect(entity) {
-          return bff._collect(BuildFile, 'create', entity);
-        }
 
         //
         // Compile the entity based on parameters
@@ -418,16 +402,8 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
           return entity;
         }
 
-        return collect(compileEntity());
-      });
-
-      operations.push.apply(operations, ops);
-      //
-      // Final execution step
-      //
-      operations.push(function execute(statements, callback) {
-        statements.execute(callback);
-      });
+        return BuildFile.create.bind(BuildFile, compileEntity());
+      }));
 
       //
       // Ensure everything exists in the CDN before we commit to the database
@@ -438,7 +414,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
         //
         // Let it ride. Insert all the things into the database!
         //
-        async.waterfall(operations, fn);
+        async.series(operations.map(operation => async.retry(bff.retry, operation)), fn);
       });
     });
   });
@@ -451,7 +427,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  * them, if not we return an error so we do not modify the state of the
  * database
  *
- * @param {Array} files File Objects that correlate to the cassandra schema
+ * @param {Array} files File Objects that correlate to the database model schema
  * @param {Object} cdn CDNup instance
  * @param {Function} fn Completion callback
  * @returns {BFFS} The current instance
@@ -460,6 +436,7 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
  */
 BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
   const lookups = files.map(file => cdn.checkUrl(file.url));
+
   async.eachLimit(lookups, this.limit, (uri, next) => {
     var nxt = once(next);
     // for whatever reason hyperquest allows this callback to be called twice
@@ -476,40 +453,6 @@ BFFS.prototype._checkCdn = function checkCdn(files, cdn, fn) {
 };
 
 /**
- * Build the statement collection for the various models we are updating here
- * In the future we could wrap this up in the DAL but I think its OK here for
- * now.
- *
- * @param {datastar.Model} Model The model that needs to be created.
- * @param {String} action Action to be called on things.
- * @param {Object} entity Data for the model.
- * @returns {function} Executable function to execute statements against the Model.
- * @api private
- */
-BFFS.prototype._collect = function _collect(Model, action, entity) {
-  var bff = this;
-
-  return function collection(statements, callback) {
-    //
-    // Handle initial case. Passing in a statement collection
-    //
-    if (!callback && typeof statements === 'function') {
-      callback = statements;
-
-      statements = new bff.datastar.StatementCollection(
-        bff.datastar.connection,
-        'batch'
-      ).consistency(Model.writeConsistency);
-    }
-
-    Model[action]({
-      statements: statements,
-      entity: entity
-    }, callback);
-  };
-};
-
-/**
  * Remove a build from the registry.
  *
  * @param {Object} spec Build specification.
@@ -521,8 +464,7 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
   var BuildFile = this.models.BuildFile;
   var BuildHead = this.models.BuildHead;
   var Build = this.models.Build;
-  var fn  = once(callback);
-  var bff = this;
+  var fn = once(callback);
   var operations = [];
 
   //
@@ -530,35 +472,18 @@ BFFS.prototype.unpublish = function unpublish(spec, callback) {
   //
   this.stream(spec)
     .on('error', fn)
-    .on('data', function incoming(data) {
-    //
-    // This statement collection needs to be simpler would love ideas if it
-    // would make sense as a separate module or something in `datastar`.
-    //
-      operations.push.apply(operations,
-        data.fingerprints.map(function (print) {
-          return bff._collect(BuildFile, 'remove', {
-            fingerprint: print
-          });
-        })
+    .on('data', data => {
+      operations = operations.concat(
+        data.fingerprints.map(fingerprint => BuildFile.remove.bind(BuildFile, { fingerprint })),
+        Build.remove.bind(Build, spec),
+        BuildHead.remove.bind(BuildHead, spec),
       );
-
-      operations.push(bff._collect(Build, 'remove', spec));
-      operations.push(bff._collect(BuildHead, 'remove', spec));
     })
-    .on('end', function end() {
-      operations.push(function execute(statements, next) {
-        if (!next && typeof statements === 'function') {
-          return process.nextTick(statements);
-        }
-
-        statements.execute(next);
-      });
-
-      async.waterfall(operations, fn);
+    .on('end', () => {
+      async.series(operations.map(operation => async.retry(this.retry, operation)), fn);
     });
 
-  return bff;
+  return this;
 };
 /**
  * Execute a promote operation on the given version, fetching previous version
@@ -603,13 +528,11 @@ BFFS.prototype.promote = function promote(spec, callback) {
       });
     }))
     .on('error', fn)
-    .on('data', (data) => {
-      operations.push((next) => {
-        async.parallel([
-          (cb) => BuildHead.create(this._strip(data), cb),
-          changed && ((cb) => Build.update(data, cb))
-        ].filter(Boolean), next);
-      });
+    .on('data', data => {
+      operations.push(next => async.series([
+        BuildHead.update.bind(BuildHead, this._strip(data)),
+        changed && Build.update.bind(Build, data)
+      ].filter(Boolean).map(operation => async.retry(this.retry, operation)), next));
     })
     .on('end', () => {
       if (!operations.length) return callback(new Error(`Builds not found for ${spec.name}, ${spec.env}, ${spec.version}`));
@@ -627,7 +550,6 @@ BFFS.prototype.promote = function promote(spec, callback) {
 BFFS.prototype.rollback = function rollback(spec, version, callback) {
   var BuildHead = this.models.BuildHead;
   var Build = this.models.Build;
-  var bff = this;
 
   if (typeof version === 'function' && !callback) {
     callback = version;
@@ -692,28 +614,21 @@ BFFS.prototype.rollback = function rollback(spec, version, callback) {
     }))
     .on('error', fn)
     .pipe(parallel(this.limit, (build, next) => {
-      const miniBatch = [];
       //
       // 6. Replace the build HEAD to what we are rolling back to and the build
       //    itself so it gets the updated rollbackBuildIds
       //
-      miniBatch.push(bff._collect(BuildHead, 'create', bff._strip(build)));
-      miniBatch.push(bff._collect(Build, 'update', build));
-      miniBatch.push(function execute(statements, next) {
-        if (!next && typeof statements === 'function') {
-          return process.nextTick(statements);
-        }
-
-        statements.execute(next);
-      });
-      next(null, miniBatch);
+      next(null, [
+        BuildHead.update.bind(BuildHead, this._strip(build)),
+        Build.update.bind(Build, build)
+      ]);
     }))
     .on('data', (data) => {
       operations.push(data);
     })
     .on('end', () => {
       async.eachLimit(operations, this.limit, (ops, next) => {
-        async.waterfall(ops, next);
+        async.series(ops.map(o => async.retry(this.retry, o)), next);
       }, callback);
     });
 };
@@ -743,33 +658,33 @@ BFFS.prototype.key = function key(spec, wot) {
       //
       // My thought here is to create a single delimiter since if we are using
       // this as the buildId and previousBuildId, we would have to parse it in
-      // order to actually fetch the build from the build table since we are using
-      // composite keys to be nice to cassandra
+      // order to actually fetch the build from the build database table.
       //
       return [spec.name, spec.env, spec.version, spec.locale].join('!');
   }
 };
 
 /**
- * Strip irrelevant keys from build object before creating BuildHead
- * @param {Build} build Datastar build object
+ * Strip irrelevant keys from build object before creating BuildHead. Also remove
+ * properties that might prevent databases from upserting the record.
+ *
+ * @param {Build} build Database build object
  * @returns {Object} object literal version of build stripped of properties
  */
-BFFS.prototype._strip =  function strip(build) {
-  var b = build.toJSON();
-  delete b.value;
-  //
-  // Also remove createDate because null is not valid and it should be generated
-  //
-  delete b.createDate;
+BFFS.prototype._strip = function strip(build) {
+  var b = omit(build, [
+    'createdAt',
+    'key'
+  ]);
+
   //
   // We remove the previousBuildId when we do a `create` on a falsey value as
   // it causes validation to fail as it is not a string.
   //
-  if (has(b, 'previousBuildId')
-      && (b.previousBuildId === null
-          || typeof b.previousBuildId === 'undefined'))
+  if ('previousBuildId' in b && typeof b.previousBuildId !== 'string') {
     delete b.previousBuildId;
+  }
+
   return b;
 };
 
@@ -979,7 +894,7 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
 
   //
   // Create the proper URL paths for the artifacts we are storing in the CDN as the
-  // array we store in cassandra
+  // array we store in the database
   //
   result.artifacts = artifacts.length
     ? artifacts.map(normalize).filter(Boolean)

@@ -1,11 +1,22 @@
-dist: trusty
 sudo: required
 language: node_js
-node_js:
-- '8'
-- '10'
+
 services:
-- cassandra
-- redis
+  - redis
+  - docker
+
+node_js:
+  - "10"
+  - "12"
+
+env:
+  - AWS_ACCESS_KEY_ID=foobar AWS_SECRET_ACCESS_KEY=foobar
+
+before_install:
+  - docker pull localstack/localstack
+  - docker run -d -p 127.0.0.1:4569:4569 -p 127.0.0.1:4572:4572 --name localstack localstack/localstack
+
+install: npm install
+
 matrix:
   fast_finish: true

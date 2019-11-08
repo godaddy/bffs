@@ -27,7 +27,7 @@ Object.defineProperty(exports, 'files', {
       files: [{
         fingerprint: 'a083jada091tr0l0l01zdjD',
         filename: 'example-module.js',
-        compressed: path.join(__dirname, 'compressed.js'),
+        compressed: path.join(__dirname, 'compressed.js.gz'),
         extension: '.js',
         content: path.join(__dirname, 'content.js')
       }],

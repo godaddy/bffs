@@ -1,29 +1,40 @@
+/* eslint no-process-env: 0 */
+
+// Generate random bucket name so to ensure tests preparation
+// are not restricted by an existing bucket.
+const bucket = 'wrhs-test';
+const acl = 'public-read';
+
+const s3endpoint = 'http://localhost:4572';
+const pkgcloud = {
+  accessKeyId: 'fakeId',
+  secretAccessKey: 'fakeKey',
+  provider: 'amazon',
+  endpoint: s3endpoint,
+  forcePathBucket: true
+};
+
 module.exports = {
-  prefix: process.env.WRHS_TEST_AWS_PREFIX,
+  prefix: bucket,
+  dynamodb: {
+    endpoint: 'http://localhost:4569',
+    region: 'us-east-1'
+  },
+  s3: {
+    endpoint: s3endpoint
+  },
   cdn: {
     test: {
-      url: process.env.WRHS_TEST_AWS_TEST_URL,
-      acl: 'public-read',
-      pkgcloud: {
-        keyId: process.env.WRHS_TEST_AWS_KEY_ID,
-        key: process.env.WRHS_TEST_AWS_KEY,
-        provider: 'amazon',
-        endpoint: 's3.amazonaws.com',
-        region: 'us-west-1',
-        forcePathBucket: false
-      }
+      check: `${ s3endpoint }/${ bucket }/`,
+      url: s3endpoint,
+      pkgcloud,
+      acl
     },
     dev: {
-      url: process.env.WRHS_TEST_AWS_DEV_URL,
-      acl: 'public-read',
-      pkgcloud: {
-        keyId: process.env.WRHS_TEST_AWS_KEY_ID,
-        key: process.env.WRHS_TEST_AWS_KEY,
-        provider: 'amazon',
-        endpoint: 's3.amazonaws.com',
-        region: 'us-west-1',
-        forcePathBucket: false
-      }
+      check: `${ s3endpoint }/${ bucket }/`,
+      url: s3endpoint,
+      pkgcloud,
+      acl
     }
   }
 };
