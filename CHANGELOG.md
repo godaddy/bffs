@@ -1,6 +1,10 @@
 # Changelog
 
+### 7.0.0
+
 - [#20] Update to use `warehouse-models@6` and DynamoDB.
+
+### 6.0.0
 
 - [#19] Added filename to error messages
 - [#17] Fix bug that didn't include gzipped files as part of artifacts/recommended when specified.
