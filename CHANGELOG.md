@@ -1,5 +1,7 @@
 # Changelog
 
+### 7.0.2
+
 - Use latest `cdnup@4.1.0`
 
 ### 7.0.0
