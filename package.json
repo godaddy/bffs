@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "async": "1.4.x",
-    "cdnup": "^4.0.0",
+    "cdnup": "^4.1.0",
     "deep-extend": "^0.6.0",
     "diagnostics": "^1.0.1",
     "hyperquest": "~2.1.0",

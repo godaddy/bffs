@@ -1,5 +1,7 @@
 # Changelog
 
+- Use latest `cdnup@4.1.0`
+
 ### 7.0.0
 
 - [#20] Update to use `warehouse-models@6` and DynamoDB.
