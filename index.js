@@ -273,7 +273,6 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
 
   while (!error && i--) {
     file = files[i];
-    console.log('file received from bffs', file);
     var filename = file.filename || file.fingerprint || 'Unknown';
 
     if (!file.hasOwnProperty('compressed')) {
