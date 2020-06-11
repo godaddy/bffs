@@ -275,7 +275,8 @@ BFFS.prototype.publish = function publish(spec, options, fn) {
     file = files[i];
     var filename = file.filename || file.fingerprint || 'Unknown';
 
-    if (!file.compressed) {
+    if (!file.hasOwnProperty('compressed')) {
+      // allow compressed to be null but still require it to be passed in
       error = new Error('Missing builds compressed content for ' + filename);
     } else if (!file.content) {
       error = new Error('Missing builds content for ' + filename);
@@ -928,4 +929,3 @@ BFFS.normalizeOpts = function normalizeOpts(options = {}, env = 'dev') {
 // Expose the BFFS Interface.
 //
 module.exports = BFFS;
-
