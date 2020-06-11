@@ -1,5 +1,7 @@
 # Changelog
 
+### 7.1.0
+
 - Do not throw error and terminate publish if compressed content is provided is null in contrast to a `compressed` key not being provided at all.
 
 ### 7.0.2
